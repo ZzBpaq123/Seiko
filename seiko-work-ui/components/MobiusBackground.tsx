@@ -11,13 +11,13 @@
 //   2. 围绕莫比乌斯带的背景点阵与强调点缀（自定义着色器的粒子）
 //   3. 一层 CSS 噪点遮罩，模拟纸张质感
 // ============================================================
-import {useEffect, useMemo, useRef} from "react";
+import {memo, useEffect, useMemo, useRef} from "react";
 import {Canvas, useFrame, useThree} from "@react-three/fiber";
 import {OrbitControls} from "@react-three/drei";
 import {useTheme} from "next-themes";
 import * as THREE from "three";
 import gsap from "gsap";
-import {useHash} from "@/hooks/useHash";
+import {useIsHome} from "@/hooks/useHash";
 
 // ---------- 全局视觉常量 ----------
 // 按主题区分的一套配色（浅色：纸雕米白底 + 深灰线框 + 黑点；深色：近黑底 + 浅灰线框 + 白点）
@@ -71,9 +71,7 @@ function useThemeKey(): ThemeKey {
 // 返回的是常量对象引用，可直接作为 useMemo / useEffect 的依赖。
 function useRingPalette() {
     const theme = useThemeKey();
-    const hash = useHash();
-    // hash 为空或仅 "#" 表示首页
-    const isHome = !hash || hash === "#";
+    const isHome = useIsHome();
     return THEME_COLORS[theme][isHome ? "home" : "content"];
 }
 
@@ -411,7 +409,7 @@ function DotField({
     // ownAngle：记录粒子组自身的累计旋转角（绕 Z 轴）
     const ownAngle = useRef(0);
 
-    // 创建共享的粒子材质（ShaderMaterial），主题切换时重建以更新点颜色
+    // 复用材质；主题变化只更新 uniform，不重建 GPU 资源。
     const material = useMemo(
         () =>
             new THREE.ShaderMaterial({
@@ -422,13 +420,19 @@ function DotField({
                     uPixelRatio: {value: gl.getPixelRatio()}, // 设备像素比
                     uFadeStart: {value: 18.0}, // 近处渐隐起始阈值
                     uFadeEnd: {value: 32.0}, // 近处渐隐结束阈值
-                    uColor: {value: new THREE.Vector3(...dotColor)}, // 点颜色（随主题）
+                    uColor: {value: new THREE.Vector3()}, // 点颜色（随主题）
                 },
                 vertexShader: DOT_VERTEX_SHADER,
                 fragmentShader: DOT_FRAGMENT_SHADER,
             }),
-        [gl, dotColor]
+        [gl]
     );
+
+    useEffect(() => {
+        material.uniforms.uColor.value.set(...dotColor);
+    }, [material, dotColor]);
+
+    useEffect(() => () => material.dispose(), [material]);
 
     // 监听像素比变化（如跨屏拖动窗口 / 缩放），实时更新 uniform
     useEffect(() => {
@@ -510,13 +514,14 @@ function MobiusScene() {
 
         groupRef.current.scale.set(0.01, 0.01, 0.01);
 
-        gsap.to(groupRef.current.scale, {
+        const tween = gsap.to(groupRef.current.scale, {
             x: 1,
             y: 1,
             z: 1,
             duration: 2.2,
             ease: "power2.out",
         });
+        return () => { tween.kill(); };
     }, []);
 
     // 每帧动画：莫比乌斯带绕 Y 轴缓慢自转
@@ -583,12 +588,18 @@ function NoiseOverlay() {
         const ctx = canvas.getContext("2d");
         if (!ctx) return;
 
+        let frame = 0;
+        let previousSize = "";
+
         // 绘制函数：每次调用都按当前窗口大小重画
         const draw = () => {
             // 设备像素比上限取 2，兼顾清晰度与性能
             const dpr = Math.min(window.devicePixelRatio, 2);
             const width = window.innerWidth;
             const height = window.innerHeight;
+            const size = `${width}:${height}:${dpr}`;
+            if (previousSize === size) return;
+            previousSize = size;
 
             // 画布物理像素 = 逻辑像素 × dpr
             canvas.width = width * dpr;
@@ -611,9 +622,14 @@ function NoiseOverlay() {
 
         draw();
         // 窗口尺寸变化时重绘
-        window.addEventListener("resize", draw);
-        // 组件卸载时移除监听，防止泄漏
-        return () => window.removeEventListener("resize", draw);
+        const scheduleDraw = () => {
+            if (!frame) frame = requestAnimationFrame(() => { frame = 0; draw(); });
+        };
+        window.addEventListener("resize", scheduleDraw);
+        return () => {
+            window.removeEventListener("resize", scheduleDraw);
+            cancelAnimationFrame(frame);
+        };
     }, []);
 
     return (
@@ -634,7 +650,7 @@ function NoiseOverlay() {
 //   2. 顶层（z-[1]）：噪点遮罩层
 // 该组件作为网页背景使用，固定覆盖整个视口。
 // ------------------------------------------------------------
-export function MobiusBackground() {
+function MobiusBackgroundContent() {
     return (
         <>
             <div className="fixed inset-0 z-0">
@@ -650,3 +666,5 @@ export function MobiusBackground() {
         </>
     );
 }
+
+export const MobiusBackground = memo(MobiusBackgroundContent);

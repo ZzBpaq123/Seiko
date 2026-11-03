@@ -5,6 +5,7 @@ import type { ComponentType } from "react";
 import { cn } from "@/lib/utils";
 import { useHash } from "@/hooks/useHash";
 import { useAuthUser } from "@/lib/auth";
+import { preloadPanel } from "@/lib/panelModules";
 import { ThemeToggle } from "@/components/ThemeToggle";
 
 type NavItem = {
@@ -35,6 +36,8 @@ function NavButton({
   return (
     <a
       href={item.href}
+      onPointerEnter={() => { void preloadPanel(item.href).catch(() => {}); }}
+      onFocus={() => { void preloadPanel(item.href).catch(() => {}); }}
       aria-label={item.label}
       className={cn(
         "relative flex h-12 w-12 items-center justify-center overflow-hidden rounded-full border backdrop-blur-sm transition-colors duration-200",

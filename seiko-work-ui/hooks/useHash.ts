@@ -1,18 +1,41 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useSyncExternalStore } from "react";
+
+const listeners = new Set<() => void>();
+const emit = () => listeners.forEach(listener => listener());
+const getHash = () => window.location.hash;
+const getServerHash = () => "";
+
+function onKeyDown(event: KeyboardEvent) {
+  if (event.key === "Escape" && window.location.hash && window.location.hash !== "#") clearHash();
+}
+
+function subscribe(listener: () => void) {
+  if (listeners.size === 0) {
+    window.addEventListener("hashchange", emit);
+    window.addEventListener("keydown", onKeyDown);
+  }
+  listeners.add(listener);
+  return () => {
+    listeners.delete(listener);
+    if (listeners.size === 0) {
+      window.removeEventListener("hashchange", emit);
+      window.removeEventListener("keydown", onKeyDown);
+    }
+  };
+}
 
 export function useHash() {
-  const [hash, setHash] = useState("");
+  return useSyncExternalStore(subscribe, getHash, getServerHash);
+}
 
-  useEffect(() => {
-    const update = () => setHash(window.location.hash);
-    update();
-    window.addEventListener("hashchange", update);
-    return () => window.removeEventListener("hashchange", update);
-  }, []);
+export function usePanelOpen(route: string) {
+  return useSyncExternalStore(subscribe, () => getHash() === route, () => false);
+}
 
-  return hash;
+export function useIsHome() {
+  return useSyncExternalStore(subscribe, () => !getHash() || getHash() === "#", () => true);
 }
 
 export function clearHash() {

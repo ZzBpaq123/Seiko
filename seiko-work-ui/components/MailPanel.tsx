@@ -1,9 +1,10 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { memo, useCallback, useEffect, useMemo, useState } from "react";
 import { Inbox, Loader2, MailX, Paperclip, RotateCw, X } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { clearHash, useHash } from "@/hooks/useHash";
+import { clearHash, usePanelOpen } from "@/hooks/useHash";
+import { useLatestRequest } from "@/hooks/useLatestRequest";
 import { PanelReveal } from "@/components/PanelReveal";
 import {
   getMailDetail,
@@ -34,7 +35,7 @@ function failMessage(e: unknown, fallback: string) {
   return e instanceof Error ? e.message : fallback;
 }
 
-export function MailPanel() {
+function MailPanelContent() {
   const [mails, setMails] = useState<MailMessage[]>([]);
   const [selectedUid, setSelectedUid] = useState<string | null>(null);
   const [detail, setDetail] = useState<MailMessage | null>(null);
@@ -42,41 +43,43 @@ export function MailPanel() {
   const [loadError, setLoadError] = useState<string | null>(null);
   const [detailLoading, setDetailLoading] = useState(false);
 
-  const open = useHash() === "#mail";
+  const listRequest = useLatestRequest();
+  const detailRequest = useLatestRequest();
+
+  const open = usePanelOpen("#mail");
 
   const load = useCallback(async () => {
+    const request = listRequest.start();
     setLoading(true);
     setLoadError(null);
     try {
-      const list = await listMails();
+      const list = await listMails(request.signal);
+      if (!request.isCurrent()) return;
       setMails(list);
     } catch (err) {
+      if (!request.isCurrent()) return;
       setLoadError(failMessage(err, "加载邮件失败"));
       setMails([]);
     } finally {
-      setLoading(false);
+      if (request.isCurrent()) setLoading(false);
     }
-  }, []);
+  }, [listRequest]);
 
   useEffect(() => {
     if (!open) return;
     setSelectedUid(null);
     setDetail(null);
+    setDetailLoading(false);
     load();
-  }, [open, load]);
+    return () => { listRequest.cancel(); detailRequest.cancel(); };
+  }, [open, load, listRequest, detailRequest]);
 
-  useEffect(() => {
-    const onKey = (e: KeyboardEvent) => {
-      if (e.key === "Escape") clearHash();
-    };
-    window.addEventListener("keydown", onKey);
-    return () => window.removeEventListener("keydown", onKey);
-  }, []);
 
   const unreadCount = useMemo(() => mails.filter((m) => !m.isRead).length, [mails]);
   const selected = mails.find((m) => m.messageUid === selectedUid) ?? null;
 
-  const selectMail = (mail: MailMessage) => {
+  const selectMail = useCallback((mail: MailMessage) => {
+    const request = detailRequest.start();
     setSelectedUid(mail.messageUid);
     setDetail(null);
     setDetailLoading(true);
@@ -85,11 +88,11 @@ export function MailPanel() {
       prev.map((m) => (m.messageUid === mail.messageUid ? { ...m, isRead: true } : m))
     );
     markMailRead(mail.messageUid).catch(() => {});
-    getMailDetail(mail.messageUid)
-      .then(setDetail)
-      .catch((err) => toast.error(failMessage(err, "加载邮件详情失败")))
-      .finally(() => setDetailLoading(false));
-  };
+    getMailDetail(mail.messageUid, request.signal)
+      .then(result => { if (request.isCurrent()) setDetail(result); })
+      .catch(err => { if (request.isCurrent()) toast.error(failMessage(err, "加载邮件详情失败")); })
+      .finally(() => { if (request.isCurrent()) setDetailLoading(false); });
+  }, [detailRequest]);
 
   const displayDetail = detail ?? null;
   // 正文优先按 HTML 渲染（链接可点击、实体自动解码），纯文本则转义后再渲染
@@ -145,55 +148,7 @@ export function MailPanel() {
             </div>
           ) : (
             mails.map((mail) => (
-              <button
-                key={mail.messageUid}
-                onClick={() => selectMail(mail)}
-                className={cn(
-                  "group relative flex w-full items-start gap-3 border-b border-neutral-900/5 dark:border-white/5 px-4 py-3 text-left transition-colors",
-                  mail.messageUid === selectedUid ? "bg-neutral-900/5 dark:bg-white/5" : "hover:bg-neutral-900/3"
-                )}
-              >
-                {/* 四角断开式角标：仅悬停时显示，四边中段留空 */}
-                <span className="pointer-events-none absolute left-1 top-1 h-3 w-3 border-l border-t border-neutral-900/50 dark:border-white/40 opacity-0 transition-opacity duration-200 group-hover:opacity-100" />
-                <span className="pointer-events-none absolute right-1 top-1 h-3 w-3 border-r border-t border-neutral-900/50 dark:border-white/40 opacity-0 transition-opacity duration-200 group-hover:opacity-100" />
-                <span className="pointer-events-none absolute bottom-1 left-1 h-3 w-3 border-b border-l border-neutral-900/50 dark:border-white/40 opacity-0 transition-opacity duration-200 group-hover:opacity-100" />
-                <span className="pointer-events-none absolute bottom-1 right-1 h-3 w-3 border-b border-r border-neutral-900/50 dark:border-white/40 opacity-0 transition-opacity duration-200 group-hover:opacity-100" />
-                {/* 选中项：实体线段沿边框周长循环跑动（offset-path 运动路径） */}
-                {mail.messageUid === selectedUid && (
-                  <span aria-hidden className="mail-runner" />
-                )}
-                <span className="mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-neutral-900/10 dark:bg-white/10 text-sm font-medium text-neutral-700 dark:text-neutral-300">
-                  {(mail.fromName || mail.fromAddress || "?").slice(0, 1)}
-                </span>
-                <span className="min-w-0 flex-1">
-                  <span className="flex items-baseline justify-between gap-2">
-                    <span
-                      className={cn(
-                        "truncate text-sm",
-                        !mail.isRead ? "font-semibold text-neutral-900 dark:text-neutral-100" : "text-neutral-700 dark:text-neutral-300"
-                      )}
-                    >
-                      {mail.fromName || mail.fromAddress || "未知发件人"}
-                    </span>
-                    <span className="shrink-0 text-xs text-neutral-400 dark:text-neutral-500">
-                      {formatTime(mail.receiveTime)}
-                    </span>
-                  </span>
-                  <span
-                    className={cn(
-                      "mt-0.5 block truncate text-sm",
-                      !mail.isRead ? "font-medium text-neutral-900 dark:text-neutral-100" : "text-neutral-600 dark:text-neutral-300"
-                    )}
-                  >
-                    {mail.subject || "（无主题）"}
-                  </span>
-                  <span className="mt-0.5 flex items-center gap-1 truncate text-xs text-neutral-400 dark:text-neutral-500">
-                    {mail.hasAttachment && <Paperclip className="h-3 w-3 shrink-0" />}
-                    <span className="truncate">{mail.fromAddress || ""}</span>
-                  </span>
-                </span>
-                {!mail.isRead && <span className="mt-2 h-2 w-2 shrink-0 rounded-full bg-sky-500" />}
-              </button>
+              <MailRow key={mail.messageUid} mail={mail} selected={mail.messageUid === selectedUid} onSelect={selectMail} />
             ))
           )}
         </div>
@@ -258,3 +213,62 @@ export function MailPanel() {
     </PanelReveal>
   );
 }
+
+export const MailPanel = memo(MailPanelContent);
+
+const MailRow = memo(function MailRow({ mail, selected, onSelect }: {
+  mail: MailMessage;
+  selected: boolean;
+  onSelect: (mail: MailMessage) => void;
+}) {
+  return (
+    <button
+      onClick={() => onSelect(mail)}
+      className={cn(
+        "group relative flex w-full items-start gap-3 border-b border-neutral-900/5 dark:border-white/5 px-4 py-3 text-left transition-colors",
+        selected ? "bg-neutral-900/5 dark:bg-white/5" : "hover:bg-neutral-900/3"
+      )}
+    >
+      {/* 四角断开式角标：仅悬停时显示，四边中段留空 */}
+      <span className="pointer-events-none absolute left-1 top-1 h-3 w-3 border-l border-t border-neutral-900/50 dark:border-white/40 opacity-0 transition-opacity duration-200 group-hover:opacity-100" />
+      <span className="pointer-events-none absolute right-1 top-1 h-3 w-3 border-r border-t border-neutral-900/50 dark:border-white/40 opacity-0 transition-opacity duration-200 group-hover:opacity-100" />
+      <span className="pointer-events-none absolute bottom-1 left-1 h-3 w-3 border-b border-l border-neutral-900/50 dark:border-white/40 opacity-0 transition-opacity duration-200 group-hover:opacity-100" />
+      <span className="pointer-events-none absolute bottom-1 right-1 h-3 w-3 border-b border-r border-neutral-900/50 dark:border-white/40 opacity-0 transition-opacity duration-200 group-hover:opacity-100" />
+      {/* 选中项：实体线段沿边框周长循环跑动（offset-path 运动路径） */}
+      {selected && (
+        <span aria-hidden className="mail-runner" />
+      )}
+      <span className="mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-neutral-900/10 dark:bg-white/10 text-sm font-medium text-neutral-700 dark:text-neutral-300">
+        {(mail.fromName || mail.fromAddress || "?").slice(0, 1)}
+      </span>
+      <span className="min-w-0 flex-1">
+        <span className="flex items-baseline justify-between gap-2">
+          <span
+            className={cn(
+              "truncate text-sm",
+              !mail.isRead ? "font-semibold text-neutral-900 dark:text-neutral-100" : "text-neutral-700 dark:text-neutral-300"
+            )}
+          >
+            {mail.fromName || mail.fromAddress || "未知发件人"}
+          </span>
+          <span className="shrink-0 text-xs text-neutral-400 dark:text-neutral-500">
+            {formatTime(mail.receiveTime)}
+          </span>
+        </span>
+        <span
+          className={cn(
+            "mt-0.5 block truncate text-sm",
+            !mail.isRead ? "font-medium text-neutral-900 dark:text-neutral-100" : "text-neutral-600 dark:text-neutral-300"
+          )}
+        >
+          {mail.subject || "（无主题）"}
+        </span>
+        <span className="mt-0.5 flex items-center gap-1 truncate text-xs text-neutral-400 dark:text-neutral-500">
+          {mail.hasAttachment && <Paperclip className="h-3 w-3 shrink-0" />}
+          <span className="truncate">{mail.fromAddress || ""}</span>
+        </span>
+      </span>
+      {!mail.isRead && <span className="mt-2 h-2 w-2 shrink-0 rounded-full bg-sky-500" />}
+    </button>
+  );
+});

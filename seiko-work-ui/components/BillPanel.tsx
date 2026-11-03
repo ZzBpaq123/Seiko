@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { memo, useCallback, useEffect, useMemo, useState } from "react";
 import {
   ChevronLeft,
   ChevronRight,
@@ -15,7 +15,8 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { addDays, fmtAmount, fmtDate, parseDate } from "@/lib/date";
-import { clearHash, useHash } from "@/hooks/useHash";
+import { clearHash, usePanelOpen } from "@/hooks/useHash";
+import { useLatestRequest } from "@/hooks/useLatestRequest";
 import { PanelReveal } from "@/components/PanelReveal";
 import { SavingsGoalDialog } from "@/components/SavingsGoalDialog";
 import {
@@ -163,7 +164,7 @@ type EditorState =
   | { mode: "create"; defaultDate: string }
   | { mode: "edit"; bill: BillRecord };
 
-export function BillPanel() {
+function BillPanelContent() {
   const [period, setPeriod] = useState<StatPeriod>("MONTH");
   const [anchor, setAnchor] = useState(() => new Date());
 
@@ -185,37 +186,44 @@ export function BillPanel() {
   const [saving, setSaving] = useState(false);
   const [goalOpen, setGoalOpen] = useState(false);
 
-  const open = useHash() === "#bill";
+  const open = usePanelOpen("#bill");
 
   const range = useMemo(() => periodRange(period, anchor), [period, anchor]);
   const trendRange = useMemo(() => trendWindow(period, anchor), [period, anchor]);
   const startDate = fmtDate(range.start);
   const endDate = fmtDate(range.end);
 
+  const statsRequest = useLatestRequest();
+  const listRequest = useLatestRequest();
+
   const loadStats = useCallback(async () => {
+    const request = statsRequest.start();
     setStatsLoading(true);
     setStatsError(null);
     try {
       const [s, t, c] = await Promise.all([
-        getBillSummary(startDate, endDate),
-        getBillTrend(period, fmtDate(trendRange.start), fmtDate(trendRange.end)),
-        getBillCategoryStat(startDate, endDate),
+        getBillSummary(startDate, endDate, request.signal),
+        getBillTrend(period, fmtDate(trendRange.start), fmtDate(trendRange.end), request.signal),
+        getBillCategoryStat(startDate, endDate, request.signal),
       ]);
+      if (!request.isCurrent()) return;
       setSummary(s);
       setTrend(t);
       setCategoryStat(c);
     } catch (err) {
+      if (!request.isCurrent()) return;
       setStatsError(failMessage(err, "加载统计失败"));
       setSummary(null);
       setTrend([]);
       setCategoryStat([]);
     } finally {
-      setStatsLoading(false);
+      if (request.isCurrent()) setStatsLoading(false);
     }
-  }, [period, startDate, endDate, trendRange]);
+  }, [period, startDate, endDate, trendRange, statsRequest]);
 
   const loadList = useCallback(
     async (targetPage: number) => {
+      const request = listRequest.start();
       if (targetPage === 1) setListLoading(true);
       else setListMoreLoading(true);
       setListError(null);
@@ -225,37 +233,35 @@ export function BillPanel() {
           size: PAGE_SIZE,
           startDate,
           endDate,
-        });
+        }, request.signal);
+        if (!request.isCurrent()) return;
         setBills((prev) => (targetPage === 1 ? res.records : [...prev, ...res.records]));
         setTotal(res.total);
         setPage(targetPage);
       } catch (err) {
+        if (!request.isCurrent()) return;
         setListError(failMessage(err, "加载账单失败"));
         if (targetPage === 1) {
           setBills([]);
           setTotal(0);
         }
       } finally {
-        setListLoading(false);
-        setListMoreLoading(false);
+        if (request.isCurrent()) {
+          setListLoading(false);
+          setListMoreLoading(false);
+        }
       }
     },
-    [startDate, endDate]
+    [startDate, endDate, listRequest]
   );
 
   useEffect(() => {
     if (!open) return;
     loadStats();
     loadList(1);
-  }, [open, loadStats, loadList]);
+    return () => { statsRequest.cancel(); listRequest.cancel(); };
+  }, [open, loadStats, loadList, statsRequest, listRequest]);
 
-  useEffect(() => {
-    const onKey = (e: KeyboardEvent) => {
-      if (e.key === "Escape") clearHash();
-    };
-    window.addEventListener("keydown", onKey);
-    return () => window.removeEventListener("keydown", onKey);
-  }, []);
 
   const reload = useCallback(() => {
     loadStats();
@@ -898,3 +904,5 @@ function BillEditor({
     </div>
   );
 }
+
+export const BillPanel = memo(BillPanelContent);

@@ -43,10 +43,11 @@ function toDateTime(date: string, time: string) {
   return `${date} ${time}`;
 }
 
-export function listEventsByRange(start: string, end: string) {
+export function listEventsByRange(start: string, end: string, signal?: AbortSignal) {
   return request<CalendarEvent[]>({
     method: "GET",
     url: "/api/events/range",
+    signal,
     params: { start: toDateTime(start, "00:00:00"), end: toDateTime(end, "23:59:59") },
   });
 }

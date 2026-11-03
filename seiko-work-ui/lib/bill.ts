@@ -88,8 +88,8 @@ export interface PageResult<T> {
   pages: number;
 }
 
-export function listBills(query: BillQuery = {}) {
-  return request<PageResult<BillRecord>>({ method: "GET", url: "/api/bills", params: query });
+export function listBills(query: BillQuery = {}, signal?: AbortSignal) {
+  return request<PageResult<BillRecord>>({ method: "GET", url: "/api/bills", params: query, signal });
 }
 
 export function getBill(id: number) {
@@ -113,26 +113,29 @@ export function getBillOverview() {
   return request<BillOverview>({ method: "GET", url: "/api/bills/overview" });
 }
 
-export function getBillSummary(startDate: string, endDate: string) {
+export function getBillSummary(startDate: string, endDate: string, signal?: AbortSignal) {
   return request<BillSummary>({
     method: "GET",
     url: "/api/bills/summary",
     params: { startDate, endDate },
+    signal,
   });
 }
 
-export function getBillTrend(period: StatPeriod, startDate: string, endDate: string) {
+export function getBillTrend(period: StatPeriod, startDate: string, endDate: string, signal?: AbortSignal) {
   return request<BillTrend[]>({
     method: "GET",
     url: "/api/bills/trend",
     params: { period, startDate, endDate },
+    signal,
   });
 }
 
-export function getBillCategoryStat(startDate: string, endDate: string) {
+export function getBillCategoryStat(startDate: string, endDate: string, signal?: AbortSignal) {
   return request<BillCategoryStat[]>({
     method: "GET",
     url: "/api/bills/category-stat",
     params: { startDate, endDate },
+    signal,
   });
 }

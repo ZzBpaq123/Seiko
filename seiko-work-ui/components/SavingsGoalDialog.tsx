@@ -98,10 +98,11 @@ export function SavingsGoalDialog({ onClose }: { onClose: () => void }) {
   useEffect(() => {
     if (!goalLoaded) return;
     let cancelled = false;
+    const controller = new AbortController();
     setStatsLoading(true);
     const timer = setTimeout(async () => {
       try {
-        const summary = await getBillSummary(fmtDate(cycle.start), fmtDate(cycle.end));
+        const summary = await getBillSummary(fmtDate(cycle.start), fmtDate(cycle.end), controller.signal);
         if (cancelled) return;
         setMonthIncome(summary.income);
         setMonthExpense(summary.expense);
@@ -114,6 +115,7 @@ export function SavingsGoalDialog({ onClose }: { onClose: () => void }) {
     return () => {
       cancelled = true;
       clearTimeout(timer);
+      controller.abort();
     };
   }, [goalLoaded, cycle]);
 

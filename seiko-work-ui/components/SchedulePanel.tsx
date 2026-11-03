@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { memo, useCallback, useEffect, useMemo, useState } from "react";
 import {
   CalendarPlus,
   ChevronLeft,
@@ -13,7 +13,9 @@ import {
   X,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { clearHash, useHash } from "@/hooks/useHash";
+import { clearHash, usePanelOpen } from "@/hooks/useHash";
+import { useLatestRequest } from "@/hooks/useLatestRequest";
+import { buildCalendarIndex } from "@/lib/calendarIndex";
 import { PanelReveal } from "@/components/PanelReveal";
 import { DateTimeRangePicker, type DateTimeRange } from "@/components/DateTimeRangePicker";
 import {
@@ -85,7 +87,7 @@ type EditorState =
   | { mode: "create"; startDate?: string }
   | { mode: "edit"; event: CalendarEvent };
 
-export function SchedulePanel() {
+function SchedulePanelContent() {
   const today = useMemo(() => fmtDate(new Date()), []);
   const [view, setView] = useState(() => {
     const now = new Date();
@@ -100,7 +102,7 @@ export function SchedulePanel() {
   const [saving, setSaving] = useState(false);
   const [query, setQuery] = useState("");
 
-  const open = useHash() === "#schedule";
+  const open = usePanelOpen("#schedule");
 
   const gridStart = useMemo(() => {
     const first = new Date(view.year, view.month, 1);
@@ -110,24 +112,29 @@ export function SchedulePanel() {
   const days = useMemo(() => Array.from({ length: 42 }, (_, i) => addDays(gridStart, i)), [gridStart]);
   const gridEnd = days[41];
 
+  const eventRequest = useLatestRequest();
   const load = useCallback(async () => {
+    const request = eventRequest.start();
     setLoading(true);
     setLoadError(null);
     try {
-      const list = await listEventsByRange(fmtDate(gridStart), fmtDate(gridEnd));
+      const list = await listEventsByRange(fmtDate(gridStart), fmtDate(gridEnd), request.signal);
+      if (!request.isCurrent()) return;
       setEvents(list);
     } catch (err) {
+      if (!request.isCurrent()) return;
       setLoadError(failMessage(err, "加载日程失败"));
       setEvents([]);
     } finally {
-      setLoading(false);
+      if (request.isCurrent()) setLoading(false);
     }
-  }, [gridStart, gridEnd]);
+  }, [gridStart, gridEnd, eventRequest]);
 
   useEffect(() => {
     if (!open) return;
     load();
-  }, [open, load]);
+    return () => eventRequest.cancel();
+  }, [open, load, eventRequest]);
 
   useEffect(() => {
     if (!open) return;
@@ -142,45 +149,16 @@ export function SchedulePanel() {
     };
   }, [open, gridStart, gridEnd]);
 
-  useEffect(() => {
-    const onKey = (e: KeyboardEvent) => {
-      if (e.key === "Escape") clearHash();
-    };
-    window.addEventListener("keydown", onKey);
-    return () => window.removeEventListener("keydown", onKey);
-  }, []);
 
   const goMonth = (n: number) => {
     const d = new Date(view.year, view.month + n, 1);
     setView({ year: d.getFullYear(), month: d.getMonth() });
   };
 
-  const eventsOfDay = (dateStr: string) =>
-    events
-      .filter((e) => {
-        const { start, end } = eventDates(e);
-        return start <= dateStr && dateStr <= end;
-      })
-      .sort((a, b) => eventDates(a).start.localeCompare(eventDates(b).start) || a.id - b.id);
-
-  // 泳道分配：给每条日程分配一个车道，保证同一日程在所有日期格中纵向位置一致，
-  // 相邻日期格的横条才能对齐连成一条线
-  const eventLanes = useMemo(() => {
-    const laneEnds: string[] = []; // 每条泳道当前最后占用的日期
-    const lanes = new Map<number, number>();
-    for (const e of events) {
-      const { start, end } = eventDates(e);
-      let lane = laneEnds.findIndex((lastEnd) => lastEnd < start);
-      if (lane === -1) {
-        laneEnds.push(end);
-        lane = laneEnds.length - 1;
-      } else {
-        laneEnds[lane] = end;
-      }
-      lanes.set(e.id, lane);
-    }
-    return lanes;
-  }, [events]);
+  const calendar = useMemo(
+    () => buildCalendarIndex(events, days.map(fmtDate), MAX_BARS),
+    [events, days]
+  );
 
   const sortedEvents = useMemo(
     () => [...events].sort((a, b) => a.startTime.localeCompare(b.startTime) || a.id - b.id),
@@ -225,6 +203,81 @@ export function SchedulePanel() {
       setSaving(false);
     }
   };
+
+  const calendarCells = useMemo(() => (
+    days.map((day) => {
+      const dateStr = fmtDate(day);
+      const inMonth = day.getMonth() === view.month;
+      const holiday = holidays[dateStr];
+      const dayEntry = calendar.get(dateStr);
+      const dayLanes = dayEntry?.slots;
+      const dayCount = dayEntry?.count ?? 0;
+      return (
+        <div
+          key={dateStr}
+          className={cn(
+            "flex min-h-20 flex-col border-b border-r border-neutral-900/5 dark:border-white/5 p-1.5",
+            !inMonth && "opacity-35"
+          )}
+        >
+          <div className="flex items-start">
+            <span
+              className={cn(
+                "flex h-6 w-6 items-center justify-center rounded-full text-xs",
+                dateStr === today
+                  ? "bg-neutral-900 dark:bg-neutral-50 font-semibold text-neutral-50 dark:text-neutral-900"
+                  : holiday?.isHoliday === 1
+                    ? "font-medium text-red-600"
+                    : "font-semibold text-neutral-900 dark:text-neutral-100"
+              )}
+            >
+              {day.getDate()}
+            </span>
+          </div>
+          {/* 固定高度槽位，保证有无节假日的格子横线对齐 */}
+          <div className="mt-0.5 h-6 overflow-hidden">
+            {holiday && (
+              <span
+                className={cn(
+                  "block break-all text-right text-[10px] leading-3",
+                  holiday.isHoliday === 1 ? "text-red-600" : "text-neutral-600 dark:text-neutral-300"
+                )}
+              >
+                {holiday.name}
+              </span>
+            )}
+          </div>
+          <div className="mt-1 flex flex-1 flex-col gap-0.5">
+            {Array.from({ length: MAX_BARS }, (_, lane) => {
+              const slot = dayLanes?.[lane];
+              if (!slot) return <div key={`lane-${lane}`} className="h-1.5" />;
+              const { event: e, start, end } = slot;
+              return (
+                <button
+                  key={`lane-${lane}`}
+                  onClick={() => setDetail(e)}
+                  title={e.title}
+                  className={cn(
+                    "h-1.5 w-[calc(100%+0.75rem)] cursor-pointer transition-opacity hover:opacity-70",
+                    // 负边距出血到格子边缘，使相邻格的横条无缝衔接
+                    "-mx-1.5",
+                    dateStr === start && "rounded-l-full",
+                    dateStr === end && "rounded-r-full"
+                  )}
+                  style={{ backgroundColor: eventColor(e.id) }}
+                />
+              );
+            })}
+            {dayCount > MAX_BARS && (
+              <span className="block text-[10px] leading-3 text-neutral-500 dark:text-neutral-400">
+                +{dayCount - MAX_BARS}
+              </span>
+            )}
+          </div>
+        </div>
+      );
+    })
+  ), [days, view.month, holidays, calendar, today]);
 
   return (
     <PanelReveal open={open}>
@@ -293,76 +346,7 @@ export function SchedulePanel() {
               </button>
             </div>
           ) : (
-            days.map((day) => {
-              const dateStr = fmtDate(day);
-              const inMonth = day.getMonth() === view.month;
-              const holiday = holidays[dateStr];
-              const dayEvents = eventsOfDay(dateStr);
-              return (
-                <div
-                  key={dateStr}
-                  className={cn(
-                    "flex min-h-20 flex-col border-b border-r border-neutral-900/5 dark:border-white/5 p-1.5",
-                    !inMonth && "opacity-35"
-                  )}
-                >
-                  <div className="flex items-start">
-                    <span
-                      className={cn(
-                        "flex h-6 w-6 items-center justify-center rounded-full text-xs",
-                        dateStr === today
-                          ? "bg-neutral-900 dark:bg-neutral-50 font-semibold text-neutral-50 dark:text-neutral-900"
-                          : holiday?.isHoliday === 1
-                            ? "font-medium text-red-600"
-                            : "font-semibold text-neutral-900 dark:text-neutral-100"
-                      )}
-                    >
-                      {day.getDate()}
-                    </span>
-                  </div>
-                  {/* 固定高度槽位，保证有无节假日的格子横线对齐 */}
-                  <div className="mt-0.5 h-6 overflow-hidden">
-                    {holiday && (
-                      <span
-                        className={cn(
-                          "block break-all text-right text-[10px] leading-3",
-                          holiday.isHoliday === 1 ? "text-red-600" : "text-neutral-600 dark:text-neutral-300"
-                        )}
-                      >
-                        {holiday.name}
-                      </span>
-                    )}
-                  </div>
-                  <div className="mt-1 flex flex-1 flex-col gap-0.5">
-                    {Array.from({ length: MAX_BARS }, (_, lane) => {
-                      const e = dayEvents.find((ev) => eventLanes.get(ev.id) === lane);
-                      if (!e) return <div key={`lane-${lane}`} className="h-1.5" />;
-                      const { start, end } = eventDates(e);
-                      return (
-                        <button
-                          key={`lane-${lane}`}
-                          onClick={() => setDetail(e)}
-                          title={e.title}
-                          className={cn(
-                            "h-1.5 w-[calc(100%+0.75rem)] cursor-pointer transition-opacity hover:opacity-70",
-                            // 负边距出血到格子边缘，使相邻格的横条无缝衔接
-                            "-mx-1.5",
-                            dateStr === start && "rounded-l-full",
-                            dateStr === end && "rounded-r-full"
-                          )}
-                          style={{ backgroundColor: eventColor(e.id) }}
-                        />
-                      );
-                    })}
-                    {dayEvents.length > MAX_BARS && (
-                      <span className="block text-[10px] leading-3 text-neutral-500 dark:text-neutral-400">
-                        +{dayEvents.length - MAX_BARS}
-                      </span>
-                    )}
-                  </div>
-                </div>
-              );
-            })
+            calendarCells
           )}
         </div>
       </div>
@@ -647,3 +631,5 @@ function EventEditor({
     </div>
   );
 }
+
+export const SchedulePanel = memo(SchedulePanelContent);

@@ -36,12 +36,12 @@ export function saveMailAccount(params: MailAccountParams) {
   return request<void>({ method: "POST", url: "/api/mails/account", data: params });
 }
 
-export function listMails() {
-  return request<MailMessage[]>({ method: "GET", url: "/api/mails" });
+export function listMails(signal?: AbortSignal) {
+  return request<MailMessage[]>({ method: "GET", url: "/api/mails", signal });
 }
 
-export function getMailDetail(messageUid: string) {
-  return request<MailMessage>({ method: "GET", url: `/api/mails/${messageUid}` });
+export function getMailDetail(messageUid: string, signal?: AbortSignal) {
+  return request<MailMessage>({ method: "GET", url: `/api/mails/${messageUid}`, signal });
 }
 
 export function markMailRead(messageUid: string) {

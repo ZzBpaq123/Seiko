@@ -1,5 +1,6 @@
-import axios, { AxiosError, AxiosInstance, AxiosResponse, InternalAxiosRequestConfig } from "axios";
+import axios, { AxiosHeaders, type AxiosRequestConfig, type RawAxiosHeaders, AxiosError, AxiosInstance, AxiosResponse, InternalAxiosRequestConfig } from "axios";
 import { toast } from "@/lib/toast";
+import { abortError, InFlightRequests } from "@/lib/inFlight";
 
 export interface Result<T = unknown> {
   code: number;
@@ -47,7 +48,7 @@ http.interceptors.request.use(
   (config: InternalAxiosRequestConfig) => {
     if (typeof window !== "undefined") {
       const token = localStorage.getItem("token");
-      if (token && config.headers) {
+      if (token && config.headers && !config.headers.has("token")) {
         config.headers.set("token", token);
       }
     }
@@ -56,7 +57,16 @@ http.interceptors.request.use(
   (error: AxiosError) => Promise.reject(error)
 );
 
+const inFlight = new InFlightRequests();
 let loginRedirecting = false;
+
+function currentToken() {
+  return typeof window !== "undefined" ? localStorage.getItem("token") || "" : "";
+}
+
+function belongsToCurrentSession(config?: AxiosRequestConfig) {
+  return !config || String(AxiosHeaders.from(config.headers as RawAxiosHeaders).get("token") || "") === currentToken();
+}
 
 function redirectToLogin() {
   if (typeof window === "undefined" || loginRedirecting) return;
@@ -78,6 +88,7 @@ function redirectToLogin() {
 
 http.interceptors.response.use(
   (response: AxiosResponse<Result>) => {
+    if (!belongsToCurrentSession(response.config)) return Promise.reject(abortError());
     const { data } = response;
     if (data.code !== 200) {
       // 1002 为 Token 失效，401 为 Sa-Token 过滤器未读到 token，均需重新登录
@@ -88,6 +99,7 @@ http.interceptors.response.use(
     return response;
   },
   (error: AxiosError<Result>) => {
+    if (axios.isCancel(error) || !belongsToCurrentSession(error.config)) return Promise.reject(abortError());
     const status = error.response?.status;
     const message =
       error.response?.data?.message ||
@@ -103,9 +115,26 @@ http.interceptors.response.use(
   }
 );
 
-export async function request<T>(config: Parameters<typeof http.request>[0]): Promise<T> {
-  const response = await http.request<Result<T>>(config);
-  return response.data.data;
+type RequestConfig = Omit<AxiosRequestConfig, "signal"> & { signal?: AbortSignal };
+
+export async function request<T>(config: RequestConfig): Promise<T> {
+  const headers = new AxiosHeaders(config.headers as RawAxiosHeaders);
+  headers.set("token", currentToken());
+  const scopedConfig = { ...config, headers };
+  const read = (config.method || "GET").toUpperCase() === "GET";
+  const send = async (signal?: AbortSignal) => {
+    const response = await http.request<Result<T>>({ ...scopedConfig, signal });
+    return response.data.data;
+  };
+  // SSR requests and writes are never shared across callers.
+  if (!read || typeof window === "undefined") {
+    if (!read) inFlight.clear();
+    try { return await send(config.signal); }
+    finally { if (!read) inFlight.clear(); }
+  }
+  const key = JSON.stringify([currentToken(), http.getUri(scopedConfig), headers.toJSON(),
+    config.responseType, config.timeout, config.withCredentials]);
+  return inFlight.run(key, send, config.signal);
 }
 
 export default http;

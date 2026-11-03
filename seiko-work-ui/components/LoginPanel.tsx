@@ -1,9 +1,9 @@
 "use client";
 
-import { useEffect, useState, type InputHTMLAttributes } from "react";
+import { memo, useEffect, useState, type InputHTMLAttributes } from "react";
 import { KeyRound, Loader2, LogOut, Pencil, X } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { clearHash, useHash } from "@/hooks/useHash";
+import { clearHash, usePanelOpen } from "@/hooks/useHash";
 import {
   TOKEN_KEY,
   type UserVO,
@@ -104,7 +104,7 @@ function SubmitButton({ loading, children }: { loading: boolean; children: strin
   );
 }
 
-export function LoginPanel() {
+function LoginPanelContent() {
   const [user, setUser] = useState<UserVO | null>(null);
   const [checked, setChecked] = useState(false);
   const [mode, setMode] = useState<Mode>("email-login");
@@ -164,13 +164,6 @@ export function LoginPanel() {
     setProfilePhoneCode("");
   }, [user, editing]);
 
-  useEffect(() => {
-    const onKey = (e: KeyboardEvent) => {
-      if (e.key === "Escape") clearHash();
-    };
-    window.addEventListener("keydown", onKey);
-    return () => window.removeEventListener("keydown", onKey);
-  }, []);
 
   const fail = (e: unknown) => toast.error(e instanceof Error ? e.message : "操作失败，请稍后重试");
 
@@ -423,7 +416,7 @@ export function LoginPanel() {
 
   const inputClass = "h-4 w-4 text-neutral-600 dark:text-neutral-300";
 
-  const open = useHash() === "#login";
+  const open = usePanelOpen("#login");
 
   return (
     <PanelReveal open={open}>
@@ -824,3 +817,5 @@ export function LoginPanel() {
     </PanelReveal>
   );
 }
+
+export const LoginPanel = memo(LoginPanelContent);
