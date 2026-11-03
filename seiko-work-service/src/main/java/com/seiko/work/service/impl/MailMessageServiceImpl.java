@@ -1,6 +1,7 @@
 package com.seiko.work.service.impl;
 
 import com.seiko.work.base.ResultCode;
+import com.seiko.work.config.MailServerPolicy;
 import com.seiko.work.entity.Mail;
 import com.seiko.work.vo.MailMessageVO;
 import com.seiko.work.exception.BusinessException;
@@ -55,6 +56,7 @@ public class MailMessageServiceImpl implements MailMessageService {
     private static final int MAX_PARSE_DEPTH = 10;
 
     private final MailService mailService;
+    private final MailServerPolicy mailServerPolicy;
 
     @Override
     public List<MailMessageVO> listRecent(Long userId, int limit) {
@@ -128,6 +130,7 @@ public class MailMessageServiceImpl implements MailMessageService {
     }
 
     private Store connect(Mail account) throws MessagingException {
+        mailServerPolicy.validate(account);
         Properties props = new Properties();
         props.put("mail.store.protocol", "imap");
         props.put("mail.imap.host", account.getImapHost());
@@ -137,9 +140,16 @@ public class MailMessageServiceImpl implements MailMessageService {
         props.put("mail.imap.timeout", IMAP_READ_TIMEOUT);
         // 读取邮件时不自动设置已读标记
         props.put("mail.imap.peek", "true");
+        props.put("mail.imap.ssl.checkserveridentity", "true");
+        props.put("mail.imap.writetimeout", IMAP_READ_TIMEOUT);
         Session session = Session.getInstance(props);
         Store store = session.getStore("imap");
-        store.connect(account.getImapHost(), account.getImapPort(), account.getEmail(), account.getAuthCode());
+        try {
+            store.connect(account.getImapHost(), account.getImapPort(), account.getEmail(), account.getAuthCode());
+        } catch (MessagingException e) {
+            try { store.close(); } catch (MessagingException ignored) { }
+            throw e;
+        }
         return store;
     }
 

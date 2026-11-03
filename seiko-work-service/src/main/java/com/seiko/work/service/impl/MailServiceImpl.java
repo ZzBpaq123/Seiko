@@ -11,12 +11,17 @@ import com.seiko.work.service.MailService;
 import com.seiko.work.vo.MailAccountVO;
 import org.springframework.beans.BeanUtils;
 import org.springframework.stereotype.Service;
+import lombok.RequiredArgsConstructor;
+import com.seiko.work.config.MailServerPolicy;
 
 /**
  * 邮箱账号配置 Service 实现
  */
 @Service
+@RequiredArgsConstructor
 public class MailServiceImpl extends ServiceImpl<MailMapper, Mail> implements MailService {
+
+    private final MailServerPolicy mailServerPolicy;
 
     @Override
     public Mail getByUserId(Long userId) {
@@ -34,6 +39,7 @@ public class MailServiceImpl extends ServiceImpl<MailMapper, Mail> implements Ma
         }
         BeanUtils.copyProperties(dto, account);
         fillServerConfig(account);
+        mailServerPolicy.validate(account);
         saveOrUpdate(account);
     }
 

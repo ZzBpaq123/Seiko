@@ -5,88 +5,69 @@ import cn.dev33.satoken.exception.NotPermissionException;
 import cn.dev33.satoken.exception.NotRoleException;
 import com.seiko.work.base.Result;
 import com.seiko.work.base.ResultCode;
+import jakarta.validation.ConstraintViolationException;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.http.ResponseEntity;
+import org.springframework.http.converter.HttpMessageNotReadableException;
 import org.springframework.validation.BindException;
-import org.springframework.web.bind.MethodArgumentNotValidException;
+import org.springframework.web.HttpRequestMethodNotSupportedException;
+import org.springframework.web.bind.MissingServletRequestParameterException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
+import org.springframework.web.method.annotation.HandlerMethodValidationException;
+import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
 
 import java.util.stream.Collectors;
 
-/**
- * 全局异常处理
- */
 @Slf4j
 @RestControllerAdvice
 public class GlobalExceptionHandler {
-
-    /**
-     * 业务异常
-     */
     @ExceptionHandler(BusinessException.class)
-    public Result<Void> handleBusinessException(BusinessException e) {
-        log.warn("业务异常: {}", e.getMessage());
-        return Result.error(e.getCode(), e.getMessage());
+    public ResponseEntity<Result<Void>> handleBusinessException(BusinessException e) {
+        int code = e.getCode();
+        int status = code >= 400 && code <= 599 ? code : switch (code) {
+            case 1002 -> 401;
+            case 1003 -> 403;
+            case 1004 -> 409;
+            case 1006 -> 503;
+            case 1008 -> 429;
+            default -> 400;
+        };
+        return ResponseEntity.status(status).body(Result.error(code, e.getMessage()));
     }
 
-    /**
-     * 参数校验异常（JSON 请求体）
-     */
-    @ExceptionHandler(MethodArgumentNotValidException.class)
-    public Result<Void> handleMethodArgumentNotValidException(MethodArgumentNotValidException e) {
-        String message = e.getBindingResult().getFieldErrors().stream()
-                .map(error -> error.getField() + ": " + error.getDefaultMessage())
-                .collect(Collectors.joining("; "));
-        log.warn("参数校验失败: {}", message);
-        return Result.error(ResultCode.PARAM_ERROR.getCode(), message);
-    }
-
-    /**
-     * 参数绑定异常（表单 / Query 参数）
-     */
     @ExceptionHandler(BindException.class)
-    public Result<Void> handleBindException(BindException e) {
-        String message = e.getBindingResult().getFieldErrors().stream()
-                .map(error -> error.getField() + ": " + error.getDefaultMessage())
-                .collect(Collectors.joining("; "));
-        log.warn("参数绑定失败: {}", message);
-        return Result.error(ResultCode.PARAM_ERROR.getCode(), message);
+    public ResponseEntity<Result<Void>> handleBindException(BindException e) {
+        String message = e.getBindingResult().getAllErrors().stream()
+                .map(error -> error.getDefaultMessage()).collect(Collectors.joining("; "));
+        return ResponseEntity.badRequest().body(Result.error(400, message));
     }
 
-    /**
-     * Sa-Token 未登录异常
-     */
+    @ExceptionHandler({HttpMessageNotReadableException.class, MethodArgumentTypeMismatchException.class,
+            MissingServletRequestParameterException.class, ConstraintViolationException.class,
+            HandlerMethodValidationException.class})
+    public ResponseEntity<Result<Void>> handleInvalidRequest(Exception e) {
+        return ResponseEntity.badRequest().body(Result.error(ResultCode.PARAM_ERROR));
+    }
+
+    @ExceptionHandler(HttpRequestMethodNotSupportedException.class)
+    public ResponseEntity<Result<Void>> handleMethodNotAllowed(Exception e) {
+        return ResponseEntity.status(405).body(Result.error(ResultCode.METHOD_NOT_ALLOWED));
+    }
+
     @ExceptionHandler(NotLoginException.class)
-    public Result<Void> handleNotLoginException(NotLoginException e) {
-        log.warn("未登录访问: {}", e.getMessage());
-        return Result.error(ResultCode.UNAUTHORIZED);
+    public ResponseEntity<Result<Void>> handleNotLoginException(NotLoginException e) {
+        return ResponseEntity.status(401).body(Result.error(ResultCode.UNAUTHORIZED));
     }
 
-    /**
-     * Sa-Token 无角色异常
-     */
-    @ExceptionHandler(NotRoleException.class)
-    public Result<Void> handleNotRoleException(NotRoleException e) {
-        log.warn("无角色访问: {}", e.getMessage());
-        return Result.error(ResultCode.FORBIDDEN);
+    @ExceptionHandler({NotRoleException.class, NotPermissionException.class})
+    public ResponseEntity<Result<Void>> handleForbidden(Exception e) {
+        return ResponseEntity.status(403).body(Result.error(ResultCode.FORBIDDEN));
     }
 
-    /**
-     * Sa-Token 无权限异常
-     */
-    @ExceptionHandler(NotPermissionException.class)
-    public Result<Void> handleNotPermissionException(NotPermissionException e) {
-        log.warn("无权限访问: {}", e.getMessage());
-        return Result.error(ResultCode.FORBIDDEN);
-    }
-
-    /**
-     * 其他异常
-     */
     @ExceptionHandler(Exception.class)
-    public Result<Void> handleException(Exception e) {
-        log.error("系统异常: ", e);
-        return Result.error(ResultCode.ERROR);
+    public ResponseEntity<Result<Void>> handleException(Exception e) {
+        log.error("系统异常", e);
+        return ResponseEntity.internalServerError().body(Result.error(ResultCode.ERROR));
     }
-
 }

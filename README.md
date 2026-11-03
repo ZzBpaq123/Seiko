@@ -38,8 +38,9 @@ mysql -u root -p < seiko-work-service/src/main/resources/db/schema.sql
 
 | 变量 | 说明 | 默认值 |
 |------|------|--------|
-| `MYSQL_PASSWORD` | MySQL 密码 | `123456` |
-| `CRYPTO_KEY` | 敏感字段 AES-256-GCM 密钥 | `seikowork`（生产必须修改） |
+| `MYSQL_PASSWORD` | MySQL 密码 | 必填，无默认值 |
+| `REDIS_PASSWORD` | Redis 密码 | 空（实例要求认证时必填） |
+| `CRYPTO_KEY` | 敏感字段 AES-256-GCM 密钥，至少 32 字符，使用随机生成值 | 必填，无默认值 |
 | `MAIL_USERNAME` / `MAIL_PASSWORD` | 发件邮箱账号 / SMTP 授权码 | 空 |
 | `CORS_ALLOWED_ORIGINS` | 允许跨域来源 | `http://localhost:3000` |
 | `NEXT_PUBLIC_API_BASE_URL` | 前端请求的后端地址 | `http://localhost:1001` |
@@ -48,10 +49,10 @@ mysql -u root -p < seiko-work-service/src/main/resources/db/schema.sql
 
 ```bash
 cd seiko-work-service
-mvn spring-boot:run
+mvn spring-boot:run "-Dspring-boot.run.profiles=dev"
 ```
 
-接口文档：http://localhost:1001/swagger-ui.html
+开发环境接口文档：http://localhost:1001/swagger-ui.html。默认不激活开发环境，非开发环境关闭 API 文档；生产环境需通过环境变量或部署配置提供数据源和 Redis 连接配置（例如 `SPRING_DATASOURCE_URL`、`SPRING_DATASOURCE_USERNAME`、`SPRING_DATASOURCE_PASSWORD` 和 `SPRING_DATA_REDIS_*`），不要使用 dev 配置。
 
 ### 4. 启动前端
 
@@ -82,7 +83,7 @@ npm run dev / build / lint
 | 模块 | 路径 | 说明 |
 |------|------|------|
 | 认证 | `POST /auth/email/code` `/auth/email/register` `/auth/email/login` | 邮箱验证码 / 注册 / 登录 |
-| 认证 | `POST /auth/phone/code` `/auth/phone/register` `/auth/phone/login` | 手机验证码（短信当前为 Mock） |
+| 认证 | `POST /auth/phone/code` `/auth/phone/register` `/auth/phone/login` | 手机验证码（仅 dev 使用 Mock；非 dev 未配置供应商时发送失败） |
 | 认证 | `POST /auth/password/code` `/auth/password/reset` `/auth/password/change` | 找回密码 / 修改密码 |
 | 认证 | `GET /auth/info`、`PUT /auth/profile`、`POST /auth/logout` | 当前用户 / 改资料 / 登出 |
 | 任务 | `GET/POST /api/tasks`、`GET /api/tasks/today`、`PUT/DELETE /api/tasks/{id}` | 工作事项 CRUD、今日工作 |
@@ -97,7 +98,40 @@ npm run dev / build / lint
 | 账单 | `GET /api/bills/category-stat` | 分类维度统计（含支出占比） |
 | 攒钱目标 | `GET /api/savings-goal`、`PUT /api/savings-goal` | 每月收入分配目标 + 发薪日（一个用户一条配置，未配置时 `data` 为 `null`） |
 
-注意：`/auth/**` 无前缀，其余业务接口均为 `/api` 前缀；登录、注册、验证码接口公开，其余一律要求登录。
+注意：`/auth/**` 无前缀，其余业务接口均为 `/api` 前缀。登录、注册、找回密码验证码接口公开；绑定联系方式必须登录。
+
+## 安全修复后的接口与升级说明
+
+- 邮箱注册使用 `POST /auth/email/code`；手机验证码发送使用 `POST /auth/phone/code`，`purpose` 为 `LOGIN`（默认）或 `REGISTER`。找回密码必须使用 `POST /auth/password/code`。
+- 绑定新邮箱、手机号分别使用 `POST /auth/email/bind-code`、`POST /auth/phone/bind-code`，请求体仍为 `{email}` 或 `{phone}`，并携带登录 Token。验证码同时绑定当前用户。
+- 验证码不跨用途使用，连续输错 5 次即失效；校验成功立即消费，即使后续数据库操作失败也不恢复，需重新获取。旧版本验证码不再生效。
+- 发送前原子预占接收方冷却与 IP 小时配额；发送失败释放本次冷却，但保留 IP 次数，防止利用失败供应商反复调用。延迟过久的发送不会覆盖新预占。
+- 修改或重置密码在事务提交后撤销既有会话，用户需重新登录。错误响应保留 Result 格式，同时返回对应 HTTP 状态。
+- IMAP 仅允许 `MailProviderEnum` 中列出的服务商地址、993 端口和 SSL；保存时和每次连接前都会检查，历史自定义配置也受限制。新增企业邮箱需先由维护者审查并加入服务商列表。
+- 模拟短信仅用于 dev，会在日志中打印开发验证码；正式环境需提供真实 `SmsService` Bean，否则发送明确失败。
+
+### 历史邮箱授权码的密钥迁移
+
+已有数据库不能直接更换 CRYPTO_KEY，否则原授权码无法解密。若旧环境使用默认密钥或较短密钥，应先备份数据库并停止所有应用实例，然后使用离线工具迁移。工具不打印授权码和密钥，默认只验证并回滚；任意一条密文不匹配旧密钥都会导致整批回滚。
+
+通过安全方式设置环境变量 `OLD_CRYPTO_KEY`（旧环境实际密钥）、`CRYPTO_KEY`（新的至少 32 字符随机密钥）、`ROTATION_JDBC_URL`、`MYSQL_USERNAME`、`MYSQL_PASSWORD`。在后端目录运行，驱动路径替换为本机 Maven 缓存中的 mysql-connector-j JAR：
+
+```text
+java --class-path "<mysql-connector-j-8.0.33.jar 的完整路径>" tools/RotateMailKey.java
+java --class-path "<mysql-connector-j-8.0.33.jar 的完整路径>" tools/RotateMailKey.java --apply
+```
+
+确认迁移成功后，所有应用实例使用同一个新 CRYPTO_KEY 启动，再清理临时的 OLD_CRYPTO_KEY。工具仅处理现有 AES-GCM 密文，早期明文授权码应走单独的数据修复流程。本次代码修复不会自动修改实际数据库。
+
+### 验证
+
+```bash
+mvn test
+# 本地 Redis 集成测试：仅操作随机命名的测试键，不清空数据库
+# 实例需要认证时，先设置 VERIFICATION_REDIS_PASSWORD
+mvn test "-Dverification.redis.tests=true"
+java tools/RotateMailKey.java --self-test
+```
 
 ## 账单模块（记账）
 

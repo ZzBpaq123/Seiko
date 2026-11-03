@@ -58,8 +58,13 @@ public class SaTokenConfig implements WebMvcConfigurer {
                 })
                 // 异常处理函数：异常详情仅记录日志，响应统一返回固定文案
                 .setError(e -> {
-                    log.warn("Sa-Token 全局过滤器异常", e);
-                    return SaResult.error("未登录或登录已过期").setCode(ResultCode.UNAUTHORIZED.getCode());
+                    SaHolder.getResponse().setStatus(401);
+                    SaHolder.getResponse().setHeader("Content-Type", "application/json;charset=UTF-8");
+                    try {
+                        return objectMapper.writeValueAsString(Result.error(ResultCode.UNAUTHORIZED));
+                    } catch (JsonProcessingException serializationError) {
+                        return "{\"code\":401,\"message\":\"未登录或登录已过期\",\"data\":null}";
+                    }
                 });
     }
 

@@ -25,6 +25,9 @@ spring:
     properties:
       mail:
         smtp:
+          connectiontimeout: 5000
+          timeout: 10000
+          writetimeout: 10000
           auth: true
           ssl:
             enable: true
@@ -73,12 +76,12 @@ mybatis-plus:
       logic-not-delete-value: 0
 
 # spring doc-openapi 配置
-spring doc:
+springdoc:
   api-docs:
-    enabled: true
+    enabled: false
     path: /v3/api-docs
   swagger-ui:
-    enabled: true
+    enabled: false
     path: /swagger-ui.html
 
 seiko:
@@ -96,7 +99,7 @@ seiko:
 
     # 敏感字段加密密钥（AES-256-GCM）：通过环境变量注入，禁止明文写入仓库
     # 未配置时应用启动失败
-    crypto-key: ${CRYPTO_KEY:seikowork}
+    crypto-key: ${CRYPTO_KEY:}
 
     login-rate-limit:
       enabled: true

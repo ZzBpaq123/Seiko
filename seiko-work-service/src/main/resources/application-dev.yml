@@ -22,7 +22,7 @@ spring:
       host: localhost
       port: 6379
       database: 2
-      password: 123456
+      password: ${REDIS_PASSWORD:123456}
       timeout: 3000ms
       lettuce:
         pool:
@@ -34,10 +34,12 @@ spring:
 # 日志级别
 logging:
   level:
-    com.seiko.work: DEBUG
-    com.baomidou.mybatisplus: DEBUG
+    com.seiko.work: INFO
+    com.baomidou.mybatisplus: INFO
 
-# 开发环境打印 SQL 到控制台（仅限 dev，生产环境勿开启）
-mybatis-plus:
-  configuration:
-    log-impl: org.apache.ibatis.logging.stdout.StdOutImpl
+# 开发环境按需启用 API 文档，禁止打印 SQL 参数中的个人信息
+springdoc:
+  api-docs:
+    enabled: true
+  swagger-ui:
+    enabled: true

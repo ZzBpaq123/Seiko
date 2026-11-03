@@ -38,6 +38,9 @@ public final class CryptoUtil {
             throw new IllegalStateException(
                     "敏感字段加密密钥未配置：请设置环境变量 CRYPTO_KEY（或配置项 seiko.security.crypto-key）");
         }
+        if (passphrase.trim().length() < 32 || "seikowork".equals(passphrase.trim())) {
+            throw new IllegalStateException("CRYPTO_KEY 必须至少为 32 个字符，请使用随机生成的密钥");
+        }
         byte[] digest;
         try {
             digest = MessageDigest.getInstance("SHA-256").digest(passphrase.trim().getBytes(StandardCharsets.UTF_8));

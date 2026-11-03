@@ -17,6 +17,8 @@ import {
   saveLoginState,
   resetPassword,
   sendEmailCode,
+  sendBindEmailCode,
+  sendBindPhoneCode,
   sendPhoneCode,
   sendResetCode,
   updateProfile,
@@ -361,7 +363,7 @@ export function LoginPanel() {
       return false;
     }
     try {
-      await sendEmailCode(profileEmail.trim());
+      await sendBindEmailCode(profileEmail.trim());
       toast.success("验证码已发送，5 分钟内有效");
       return true;
     } catch (err) {
@@ -376,7 +378,7 @@ export function LoginPanel() {
       return false;
     }
     try {
-      await sendPhoneCode(profilePhone.trim());
+      await sendBindPhoneCode(profilePhone.trim());
       toast.success("验证码已发送，5 分钟内有效");
       return true;
     } catch (err) {

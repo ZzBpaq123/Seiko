@@ -137,3 +137,11 @@ export function useAuthUser(): UserVO | null {
 
   return user;
 }
+
+export function sendBindEmailCode(email: string) {
+  return request<void>({ method: "POST", url: "/auth/email/bind-code", data: { email } });
+}
+
+export function sendBindPhoneCode(phone: string) {
+  return request<void>({ method: "POST", url: "/auth/phone/bind-code", data: { phone } });
+}

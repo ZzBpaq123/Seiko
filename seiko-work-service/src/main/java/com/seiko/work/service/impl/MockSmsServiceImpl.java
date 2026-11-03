@@ -3,6 +3,7 @@ package com.seiko.work.service.impl;
 import com.seiko.work.service.SmsService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
+import org.springframework.context.annotation.Profile;
 
 /**
  * 模拟短信服务实现
@@ -12,6 +13,7 @@ import org.springframework.stereotype.Service;
  */
 @Slf4j
 @Service
+@Profile("dev")
 public class MockSmsServiceImpl implements SmsService {
 
     @Override

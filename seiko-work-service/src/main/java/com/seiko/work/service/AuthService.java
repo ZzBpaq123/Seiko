@@ -25,6 +25,10 @@ public interface AuthService {
      */
     void sendEmailCode(SendEmailCodeDTO dto);
 
+    void sendBindEmailCode(SendEmailCodeDTO dto);
+
+    void sendBindPhoneCode(SendPhoneCodeDTO dto);
+
     /**
      * 用户注册
      *

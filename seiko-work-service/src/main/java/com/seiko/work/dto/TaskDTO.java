@@ -6,6 +6,7 @@ import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import lombok.Data;
+import jakarta.validation.constraints.Size;
 
 import java.io.Serial;
 import java.io.Serializable;
@@ -23,6 +24,7 @@ public class TaskDTO implements Serializable {
 
     @NotBlank(message = "标题不能为空")
     @Schema(description = "标题", requiredMode = Schema.RequiredMode.REQUIRED)
+    @Size(max = 255)
     private String title;
 
     @Schema(description = "内容")

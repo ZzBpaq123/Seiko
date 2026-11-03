@@ -4,6 +4,8 @@ import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Pattern;
 import lombok.Data;
+import com.seiko.work.enums.VerificationPurpose;
+import jakarta.validation.constraints.NotNull;
 
 import java.io.Serial;
 import java.io.Serializable;
@@ -22,5 +24,8 @@ public class SendPhoneCodeDTO implements Serializable {
     @Pattern(regexp = "^1[3-9]\\d{9}$", message = "手机号格式不正确")
     @Schema(description = "手机号", requiredMode = Schema.RequiredMode.REQUIRED)
     private String phone;
+
+    @NotNull
+    private VerificationPurpose purpose = VerificationPurpose.LOGIN;
 
 }

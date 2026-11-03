@@ -31,7 +31,7 @@ public class SavingsGoalDTO implements Serializable {
     @Size(max = 10, message = "档位最多 10 个")
     @Valid
     @Schema(description = "分配档位列表", requiredMode = Schema.RequiredMode.REQUIRED)
-    private List<SavingsBucketDTO> buckets;
+    private List<@NotNull @Valid SavingsBucketDTO> buckets;
 
     /**
      * 必填：没有「未配置」这一档，前端默认填 1 号（1 号的周期与自然月等价）。

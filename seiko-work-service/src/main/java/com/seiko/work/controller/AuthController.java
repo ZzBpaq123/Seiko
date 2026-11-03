@@ -46,6 +46,20 @@ public class AuthController {
         return Result.success();
     }
 
+    @PostMapping("/email/bind-code")
+    @SaCheckLogin
+    public Result<Void> sendBindEmailCode(@Valid @RequestBody SendEmailCodeDTO dto) {
+        authService.sendBindEmailCode(dto);
+        return Result.success();
+    }
+
+    @PostMapping("/phone/bind-code")
+    @SaCheckLogin
+    public Result<Void> sendBindPhoneCode(@Valid @RequestBody SendPhoneCodeDTO dto) {
+        authService.sendBindPhoneCode(dto);
+        return Result.success();
+    }
+
     @PostMapping("/email/register")
     @Operation(summary = "用户注册（邮箱+密码）")
     public Result<Void> emailRegister(@Valid @RequestBody RegisterDTO dto) {

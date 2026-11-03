@@ -23,6 +23,7 @@ public class ResetPasswordDTO implements Serializable {
 
     @Email(message = "邮箱格式不正确")
     @Schema(description = "邮箱（邮箱和手机号至少填写一个）")
+    @Size(max = 100)
     private String email;
 
     @Pattern(regexp = "^1[3-9]\\d{9}$", message = "手机号格式不正确")

@@ -17,11 +17,14 @@ import com.seiko.work.dto.SendResetCodeDTO;
 import com.seiko.work.dto.UserProfileUpdateDTO;
 import com.seiko.work.entity.User;
 import com.seiko.work.service.AuthService;
+import com.seiko.work.service.VerificationCodeService;
+import com.seiko.work.enums.VerificationPurpose;
+import org.springframework.transaction.support.TransactionSynchronization;
+import org.springframework.transaction.support.TransactionSynchronizationManager;
 import com.seiko.work.service.SmsService;
 import com.seiko.work.service.UserService;
 import com.seiko.work.vo.LoginVO;
 import com.seiko.work.vo.UserVO;
-import com.seiko.work.util.EmailCodeUtil;
 import com.seiko.work.util.IpUtils;
 import com.seiko.work.util.PasswordUtil;
 import jakarta.servlet.http.HttpServletRequest;
@@ -36,7 +39,6 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Duration;
-import java.util.concurrent.TimeUnit;
 
 /**
  * 认证 Service 实现
@@ -46,6 +48,7 @@ import java.util.concurrent.TimeUnit;
 @RequiredArgsConstructor
 public class AuthServiceImpl implements AuthService {
 
+    private final VerificationCodeService verificationCodeService;
     private final UserService userService;
     private final StringRedisTemplate redisTemplate;
     private final JavaMailSender mailSender;
@@ -58,75 +61,39 @@ public class AuthServiceImpl implements AuthService {
 
     @Override
     public void sendEmailCode(SendEmailCodeDTO dto) {
-        doSendEmailCode(dto.getEmail());
+        doSendEmailCode(dto.getEmail(), VerificationPurpose.REGISTER, null);
     }
 
-    private void doSendEmailCode(String email) {
-        if (!Boolean.TRUE.equals(securityProperties.getEmailCode().getEnabled())) {
-            throw new BusinessException(ResultCode.ERROR.getCode(), "邮箱验证码功能未启用");
-        }
+    @Override
+    public void sendBindEmailCode(SendEmailCodeDTO dto) {
+        doSendEmailCode(dto.getEmail(), VerificationPurpose.BIND, StpUtil.getLoginIdAsLong());
+    }
 
-        String ip = IpUtils.getClientIp(request, securityProperties.getTrustedProxies());
-
-        String ipLockKey = RedisKey.EMAIL_IP_LOCK.formatted(ip);
-        if (redisTemplate.hasKey(ipLockKey)) {
-            throw new BusinessException(ResultCode.VERIFICATION_CODE_TOO_FREQUENT);
-        }
-
-        String cooldownKey = RedisKey.EMAIL_COOLDOWN.formatted(email);
-        if (redisTemplate.hasKey(cooldownKey)) {
-            throw new BusinessException(ResultCode.VERIFICATION_CODE_TOO_FREQUENT);
-        }
-
-        // IP 发送次数限制：仅检查不计数，发送成功后才计数
-        String ipCountKey = RedisKey.EMAIL_IP_COUNT.formatted(ip);
-        String count = redisTemplate.opsForValue().get(ipCountKey);
-        if (count != null && Long.parseLong(count) >= securityProperties.getEmailCode().getIpMaxSendsPerHour()) {
-            redisTemplate.opsForValue().set(ipLockKey, "1",
-                    Duration.ofSeconds(securityProperties.getEmailCode().getIpLockSeconds()));
-            throw new BusinessException(ResultCode.VERIFICATION_CODE_TOO_FREQUENT);
-        }
-
-        String code = EmailCodeUtil.generate(securityProperties.getEmailCode().getCodeLength());
-
-        // 发送邮件
-        try {
-            SimpleMailMessage message = new SimpleMailMessage();
-            message.setTo(email);
-            message.setSubject(securityProperties.getEmailCode().getSubject());
-            message.setText(String.format("您的验证码为：%s，%d 分钟内有效。如非本人操作，请忽略。",
-                    code, securityProperties.getEmailCode().getCodeTtlSeconds() / 60));
-            message.setFrom(securityProperties.getEmailCode().getSenderName() + " <" + getSenderEmail() + ">");
-            mailSender.send(message);
-            log.info("已向邮箱 {} 发送验证码", email);
-        } catch (Exception e) {
-            log.error("发送验证码邮件失败: ", e);
-            throw new BusinessException(ResultCode.VERIFICATION_CODE_SEND_FAILED);
-        }
-
-        // 发送成功后再写入验证码与冷却，失败不留脏状态
-        String codeKey = RedisKey.EMAIL_CODE.formatted(email);
-        redisTemplate.opsForValue().set(codeKey, code,
-                Duration.ofSeconds(securityProperties.getEmailCode().getCodeTtlSeconds()));
-        redisTemplate.opsForValue().set(cooldownKey, "1",
-                Duration.ofSeconds(securityProperties.getEmailCode().getResendCooldownSeconds()));
-
-        Long sends = redisTemplate.opsForValue().increment(ipCountKey);
-        if (sends != null && sends == 1) {
-            redisTemplate.expire(ipCountKey, 1, TimeUnit.HOURS);
-        }
+    private void doSendEmailCode(String email, VerificationPurpose purpose, Long owner) {
+        String normalized = VerificationCodeService.normalizeEmail(email);
+        verificationCodeService.send(true, normalized, purpose, owner,
+                IpUtils.getClientIp(request, securityProperties.getTrustedProxies()), code -> {
+                    SimpleMailMessage message = new SimpleMailMessage();
+                    message.setTo(normalized);
+                    message.setSubject(securityProperties.getEmailCode().getSubject());
+                    String operation = switch (purpose) {
+                        case REGISTER -> "注册";
+                        case LOGIN -> "登录";
+                        case RESET -> "重置密码";
+                        case BIND -> "绑定邮箱";
+                    };
+                    message.setText("您正在进行" + operation + "操作，验证码为：" + code
+                            + "。请勿将验证码提供给他人。");
+                    message.setFrom(securityProperties.getEmailCode().getSenderName() + " <" + getSenderEmail() + ">");
+                    mailSender.send(message);
+                });
     }
 
     @Override
     @Transactional(rollbackFor = Exception.class)
     public void emailRegister(RegisterDTO dto) {
-        String email = dto.getEmail();
-        String codeKey = RedisKey.EMAIL_CODE.formatted(email);
-        String cachedCode = redisTemplate.opsForValue().get(codeKey);
-
-        if (cachedCode == null || !cachedCode.equals(dto.getCode())) {
-            throw new BusinessException(ResultCode.VERIFICATION_CODE_ERROR);
-        }
+        String email = VerificationCodeService.normalizeEmail(dto.getEmail());
+        verificationCodeService.consume(true, email, VerificationPurpose.REGISTER, null, dto.getCode());
 
         String username = dto.getUsername() != null && !dto.getUsername().isBlank() ? dto.getUsername().trim() : null;
         if (userService.getByUsername(username) != null) {
@@ -148,13 +115,12 @@ public class AuthServiceImpl implements AuthService {
             throw new BusinessException(ResultCode.CONFLICT.getCode(), "用户名或邮箱已被占用");
         }
 
-        redisTemplate.delete(codeKey);
         log.info("用户 {} 注册成功", username);
     }
 
     @Override
     public LoginVO emailLogin(LoginDTO dto) {
-        String email = dto.getEmail();
+        String email = VerificationCodeService.normalizeEmail(dto.getEmail());
         String ip = IpUtils.getClientIp(request, securityProperties.getTrustedProxies());
 
         if (Boolean.TRUE.equals(securityProperties.getLoginRateLimit().getEnabled())) {
@@ -176,8 +142,8 @@ public class AuthServiceImpl implements AuthService {
             throw new BusinessException(ResultCode.LOGIN_ERROR);
         }
 
-        // 登录成功，清除失败计数
-        clearLoginFailure(email, ip);
+        // 登录成功只清除此账号的失败计数，不能清除整个 IP 的失败历史
+        clearLoginFailure(email);
 
         StpUtil.login(user.getId());
 
@@ -192,62 +158,27 @@ public class AuthServiceImpl implements AuthService {
 
     @Override
     public void sendPhoneCode(SendPhoneCodeDTO dto) {
-        doSendPhoneCode(dto.getPhone());
+        if (dto.getPurpose() != VerificationPurpose.REGISTER && dto.getPurpose() != VerificationPurpose.LOGIN) {
+            throw new BusinessException(ResultCode.PARAM_ERROR);
+        }
+        doSendPhoneCode(dto.getPhone(), dto.getPurpose(), null);
     }
 
-    private void doSendPhoneCode(String phone) {
-        if (!Boolean.TRUE.equals(securityProperties.getPhoneCode().getEnabled())) {
-            throw new BusinessException(ResultCode.ERROR.getCode(), "手机验证码功能未启用");
-        }
+    @Override
+    public void sendBindPhoneCode(SendPhoneCodeDTO dto) {
+        doSendPhoneCode(dto.getPhone(), VerificationPurpose.BIND, StpUtil.getLoginIdAsLong());
+    }
 
-        String ip = IpUtils.getClientIp(request, securityProperties.getTrustedProxies());
-
-        String ipLockKey = RedisKey.PHONE_IP_LOCK.formatted(ip);
-        if (redisTemplate.hasKey(ipLockKey)) {
-            throw new BusinessException(ResultCode.VERIFICATION_CODE_TOO_FREQUENT);
-        }
-
-        String cooldownKey = RedisKey.PHONE_COOLDOWN.formatted(phone);
-        if (redisTemplate.hasKey(cooldownKey)) {
-            throw new BusinessException(ResultCode.VERIFICATION_CODE_TOO_FREQUENT);
-        }
-
-        String ipCountKey = RedisKey.PHONE_IP_COUNT.formatted(ip);
-        String count = redisTemplate.opsForValue().get(ipCountKey);
-        if (count != null && Long.parseLong(count) >= securityProperties.getPhoneCode().getIpMaxSendsPerHour()) {
-            redisTemplate.opsForValue().set(ipLockKey, "1",
-                    Duration.ofSeconds(securityProperties.getPhoneCode().getIpLockSeconds()));
-            throw new BusinessException(ResultCode.VERIFICATION_CODE_TOO_FREQUENT);
-        }
-
-        String code = EmailCodeUtil.generate(securityProperties.getPhoneCode().getCodeLength());
-
-        smsService.send(phone, code);
-        log.info("已向手机号 {} 发送验证码", phone);
-
-        // 发送成功后再写入验证码与冷却，失败不留脏状态
-        String codeKey = RedisKey.PHONE_CODE.formatted(phone);
-        redisTemplate.opsForValue().set(codeKey, code,
-                Duration.ofSeconds(securityProperties.getPhoneCode().getCodeTtlSeconds()));
-        redisTemplate.opsForValue().set(cooldownKey, "1",
-                Duration.ofSeconds(securityProperties.getPhoneCode().getResendCooldownSeconds()));
-
-        Long sends = redisTemplate.opsForValue().increment(ipCountKey);
-        if (sends != null && sends == 1) {
-            redisTemplate.expire(ipCountKey, 1, TimeUnit.HOURS);
-        }
+    private void doSendPhoneCode(String phone, VerificationPurpose purpose, Long owner) {
+        verificationCodeService.send(false, phone, purpose, owner,
+                IpUtils.getClientIp(request, securityProperties.getTrustedProxies()), code -> smsService.send(phone, code));
     }
 
     @Override
     @Transactional(rollbackFor = Exception.class)
     public void phoneRegister(PhoneRegisterDTO dto) {
         String phone = dto.getPhone();
-        String codeKey = RedisKey.PHONE_CODE.formatted(phone);
-        String cachedCode = redisTemplate.opsForValue().get(codeKey);
-
-        if (cachedCode == null || !cachedCode.equals(dto.getCode())) {
-            throw new BusinessException(ResultCode.VERIFICATION_CODE_ERROR);
-        }
+        verificationCodeService.consume(false, phone, VerificationPurpose.REGISTER, null, dto.getCode());
 
         String username = dto.getUsername() != null && !dto.getUsername().isBlank() ? dto.getUsername().trim() : null;
         if (userService.getByUsername(username) != null) {
@@ -271,7 +202,6 @@ public class AuthServiceImpl implements AuthService {
             throw new BusinessException(ResultCode.CONFLICT.getCode(), "用户名或手机号已被占用");
         }
 
-        redisTemplate.delete(codeKey);
         log.info("用户 {} 手机号注册成功", username);
     }
 
@@ -294,15 +224,14 @@ public class AuthServiceImpl implements AuthService {
             throw new BusinessException(ResultCode.USER_DISABLED);
         }
 
-        String codeKey = RedisKey.PHONE_CODE.formatted(phone);
-        String cachedCode = redisTemplate.opsForValue().get(codeKey);
-        if (cachedCode == null || !cachedCode.equals(dto.getCode())) {
+        try {
+            verificationCodeService.consume(false, phone, VerificationPurpose.LOGIN, null, dto.getCode());
+        } catch (BusinessException e) {
             handleLoginFailure(phone, ip);
             throw new BusinessException(ResultCode.LOGIN_ERROR);
         }
 
-        clearLoginFailure(phone, ip);
-        redisTemplate.delete(codeKey);
+        clearLoginFailure(phone);
 
         StpUtil.login(user.getId());
 
@@ -317,44 +246,29 @@ public class AuthServiceImpl implements AuthService {
 
     @Override
     public void sendResetCode(SendResetCodeDTO dto) {
-        String email = dto.getEmail();
+        String email = VerificationCodeService.normalizeEmail(dto.getEmail());
         if (email != null && !email.isBlank()) {
             if (userService.getByEmail(email) != null) {
-                doSendEmailCode(email);
+                doSendEmailCode(email, VerificationPurpose.RESET, null);
             }
             return;
         }
         String phone = dto.getPhone();
         if (userService.getByPhone(phone) != null) {
-            doSendPhoneCode(phone);
+            doSendPhoneCode(phone, VerificationPurpose.RESET, null);
         }
     }
 
     @Override
     @Transactional(rollbackFor = Exception.class)
     public void resetPassword(ResetPasswordDTO dto) {
-        String email = dto.getEmail();
-        User user;
-        String codeKey;
-        if (email != null && !email.isBlank()) {
-            user = userService.getByEmail(email);
-            codeKey = RedisKey.EMAIL_CODE.formatted(email);
-        } else {
-            String phone = dto.getPhone();
-            user = userService.getByPhone(phone);
-            codeKey = RedisKey.PHONE_CODE.formatted(phone);
-        }
-
-        String cachedCode = redisTemplate.opsForValue().get(codeKey);
-        if (user == null || cachedCode == null || !cachedCode.equals(dto.getCode())) {
-            throw new BusinessException(ResultCode.VERIFICATION_CODE_ERROR);
-        }
-
-        user.setPassword(PasswordUtil.hash(dto.getPassword()));
-        userService.updateById(user);
-
-        redisTemplate.delete(codeKey);
-        StpUtil.logout(user.getId());
+        String email = VerificationCodeService.normalizeEmail(dto.getEmail());
+        boolean byEmail = email != null && !email.isBlank();
+        String contact = byEmail ? email : dto.getPhone();
+        verificationCodeService.consume(byEmail, contact, VerificationPurpose.RESET, null, dto.getCode());
+        User user = byEmail ? userService.getByEmail(email) : userService.getByPhone(contact);
+        if (user == null) throw new BusinessException(ResultCode.VERIFICATION_CODE_ERROR);
+        updatePassword(user.getId(), dto.getPassword());
     }
 
     @Override
@@ -374,8 +288,7 @@ public class AuthServiceImpl implements AuthService {
             throw new BusinessException(ResultCode.OLD_PASSWORD_ERROR);
         }
 
-        user.setPassword(PasswordUtil.hash(dto.getPassword()));
-        userService.updateById(user);
+        updatePassword(userId, dto.getPassword());
     }
 
     @Override
@@ -396,13 +309,14 @@ public class AuthServiceImpl implements AuthService {
             user.setUsername(username);
         }
 
-        String email = dto.getEmail() != null && !dto.getEmail().isBlank() ? dto.getEmail().trim() : null;
+        String email = dto.getEmail() != null && !dto.getEmail().isBlank()
+                ? VerificationCodeService.normalizeEmail(dto.getEmail()) : null;
         if (email != null && !email.equals(user.getEmail())) {
             User exists = userService.getByEmail(email);
             if (exists != null && !exists.getId().equals(userId)) {
                 throw new BusinessException(ResultCode.CONFLICT.getCode(), "该邮箱已被其他账号绑定");
             }
-            verifyCode(RedisKey.EMAIL_CODE.formatted(email), dto.getEmailCode());
+            verificationCodeService.consume(true, email, VerificationPurpose.BIND, userId, dto.getEmailCode());
             user.setEmail(email);
         }
 
@@ -412,7 +326,7 @@ public class AuthServiceImpl implements AuthService {
             if (exists != null && !exists.getId().equals(userId)) {
                 throw new BusinessException(ResultCode.CONFLICT.getCode(), "该手机号已被其他账号绑定");
             }
-            verifyCode(RedisKey.PHONE_CODE.formatted(phone), dto.getPhoneCode());
+            verificationCodeService.consume(false, phone, VerificationPurpose.BIND, userId, dto.getPhoneCode());
             user.setPhone(phone);
         }
 
@@ -420,7 +334,13 @@ public class AuthServiceImpl implements AuthService {
         user.setAvatar(avatar);
 
         try {
-            userService.updateById(user);
+            User patch = new User();
+            patch.setId(userId);
+            patch.setUsername(user.getUsername());
+            patch.setEmail(user.getEmail());
+            patch.setPhone(user.getPhone());
+            patch.setAvatar(user.getAvatar());
+            userService.updateById(patch);
         } catch (DuplicateKeyException e) {
             throw new BusinessException(ResultCode.CONFLICT.getCode(), "用户名、邮箱或手机号已被占用");
         }
@@ -443,15 +363,22 @@ public class AuthServiceImpl implements AuthService {
         return convertToVO(user);
     }
 
-    private void verifyCode(String codeKey, String code) {
-        if (code == null || code.isBlank()) {
-            throw new BusinessException(ResultCode.PARAM_ERROR.getCode(), "验证码不能为空");
+    private void updatePassword(Long userId, String password) {
+        User patch = new User();
+        patch.setId(userId);
+        patch.setPassword(PasswordUtil.hash(password));
+        if (!userService.updateById(patch)) throw new BusinessException(ResultCode.NOT_FOUND);
+        // Do not revoke sessions before a transaction that might still roll back.
+        if (TransactionSynchronizationManager.isSynchronizationActive()) {
+            TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
+                @Override
+                public void afterCommit() {
+                    StpUtil.logout(userId);
+                }
+            });
+        } else {
+            StpUtil.logout(userId);
         }
-        String cachedCode = redisTemplate.opsForValue().get(codeKey);
-        if (cachedCode == null || !cachedCode.equals(code)) {
-            throw new BusinessException(ResultCode.VERIFICATION_CODE_ERROR);
-        }
-        redisTemplate.delete(codeKey);
     }
 
     private void checkLoginLock(String email, String ip) {
@@ -492,12 +419,11 @@ public class AuthServiceImpl implements AuthService {
         }
     }
 
-    private void clearLoginFailure(String email, String ip) {
+    private void clearLoginFailure(String email) {
         if (!Boolean.TRUE.equals(securityProperties.getLoginRateLimit().getEnabled())) {
             return;
         }
         redisTemplate.delete(RedisKey.LOGIN_ACCOUNT_FAIL.formatted(email));
-        redisTemplate.delete(RedisKey.LOGIN_IP_FAIL.formatted(ip));
     }
 
     private String getSenderEmail() {
