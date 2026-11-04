@@ -46,6 +46,16 @@ desktop.ini
 # ==================== UI ====================
 /seiko-work-ui/node_modules/
 /seiko-work-ui/.next
+/seiko-blog-ui/node_modules/
+/seiko-blog-ui/.next/
+/seiko-blog-ui/out/
+/seiko-blog-ui/next-env.d.ts
+/seiko-blog-ui/*.tsbuildinfo
+/seiko-manage-ui/node_modules/
+/seiko-manage-ui/.next/
+/seiko-manage-ui/out/
+/seiko-manage-ui/next-env.d.ts
+/seiko-manage-ui/*.tsbuildinfo
 
 # ==================== AI ====================
 .claude/**

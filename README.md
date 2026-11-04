@@ -1,4 +1,4 @@
-# Seiko Work
+# Seiko
 
 面向个人的工作站：接收邮件、安排每日工作与日程、记录每日收支。
 
@@ -17,6 +17,8 @@
 ```
 seiko-work-service/   # 后端（Maven，端口 1001）
 seiko-work-ui/        # 前端（Next.js，开发端口 3000）
+seiko-blog-ui/        # 博客公开前台（Next.js 16，建议开发端口 3001）
+seiko-manage-ui/      # 博客管理前台（Next.js 16，默认端口 3002）
 doc/                  # 项目文档
 ```
 
@@ -63,6 +65,42 @@ npm run dev
 ```
 
 访问 http://localhost:3000
+
+### 5. 启动博客前台（可选）
+
+`seiko-blog-ui` 从 `D:\Project\seiko-web\seiko-blog-ui` 迁入，作为独立应用保留原有页面、静态资源和依赖锁文件。它使用 Next.js 16.1.6 + React 19.2.3，需要 Node.js 20.9+，不与工作台共享依赖。
+
+```powershell
+cd seiko-blog-ui
+npm ci
+Copy-Item .env.example .env.local
+# 按实际博客后端地址修改 .env.local
+npm run dev -- --port 3001
+```
+
+访问 http://localhost:3001。生产构建使用 `npm run build`，启动使用 `npm start -- --port 3001`。
+
+博客前台的 `NEXT_PUBLIC_API_BASE_URL` 必须包含 `/api/blog`，默认是 `http://localhost:1001/api/blog`。当前 `seiko-work-service` 不提供博客接口；展示文章、相册、评论等动态数据仍需单独运行原博客后端，并允许博客前台来源的跨域请求。若两个后端同时运行，需配置不同端口，并相应调整博客 API 地址。未连接博客后端时，部分页面降级显示空数据。地图功能需配置 `NEXT_PUBLIC_AMAP_KEY`。
+
+版本管理中不包含原 `.env.local`、依赖目录和构建缓存。更多页面与配置说明见 [博客前台 README](seiko-blog-ui/README.md)。
+
+### 6. 启动博客管理前台（可选）
+
+`seiko-manage-ui` 从 `D:\Project\seiko-web\seiko-manage` 迁入并更名，使用 Next.js 16.1.6 + React 19.2.3，需要 Node.js 20.9+。
+
+```powershell
+cd seiko-manage-ui
+npm ci
+Copy-Item .env.example .env.local
+# 按实际博客后端地址修改 .env.local
+npm run dev
+```
+
+访问 http://localhost:3002。生产环境使用 `npm run build` 构建、`npm start` 启动（端口 3002）。
+
+管理前台的 `NEXT_PUBLIC_API_BASE_URL` 默认是 `http://localhost:1001/api`，请求路径会追加 `/manage/**`。当前 `seiko-work-service` 不提供这些管理接口，登录和内容管理仍需原博客后端，并在该后端允许管理前台来源的跨域请求。两个后端同时运行时需分配不同端口并调整 API 地址。足迹地图选点需配置 `NEXT_PUBLIC_AMAP_KEY` 和 `NEXT_PUBLIC_AMAP_SECURITY_CODE`。
+
+原 `.env.local` 未迁入；依赖和构建缓存不纳入版本管理。更多说明见 [管理前台 README](seiko-manage-ui/README.md)。
 
 ## 常用命令
 

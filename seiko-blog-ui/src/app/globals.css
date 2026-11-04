@@ -1,0 +1,368 @@
+@import "tailwindcss";
+
+:root {
+  --background: #ffffff;
+  --foreground: #171717;
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --font-sans: var(--font-geist-sans);
+  --font-mono: var(--font-geist-mono);
+  /* 马卡龙装饰色系 */
+  --color-macaron-pink: #ffb7b2;
+  --color-macaron-peach: #ffdac1;
+  --color-macaron-mint: #a0e7e5;
+  --color-macaron-sage: #b5ead7;
+  --color-macaron-lime: #e2f0cb;
+  --color-macaron-lavender: #c7ceea;
+  --color-macaron-coral: #f8b195;
+  --color-macaron-rose: #f67280;
+
+  /* 影视页浅色主题色 */
+  --color-movie-bg: #f5f3ef;
+  --color-movie-surface: #ffffff;
+  --color-movie-surface-elevated: #ffffff;
+  --color-movie-text: #1f2937;
+  --color-movie-muted: #6b7280;
+  --color-movie-accent: #dc2626;
+  --color-movie-rank: #ef4444;
+
+  /* 游戏页浅色主题色 */
+  --color-game-bg: #f8f7f5;
+  --color-game-surface: #ffffff;
+  --color-game-surface-alt: #f2f0ec;
+  --color-game-text: #1f2937;
+  --color-game-muted: #6b7280;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --background: #0a0a0a;
+    --foreground: #ededed;
+  }
+}
+
+body {
+  background: var(--background);
+  color: var(--foreground);
+  font-family: Arial, Helvetica, sans-serif;
+}
+
+/* Smooth scrolling */
+html {
+  scroll-behavior: smooth;
+  scroll-padding-top: 4rem; /* Account for fixed header */
+  scrollbar-width: none; /* Firefox */
+  -ms-overflow-style: none; /* IE and Edge */
+}
+
+/* Hide scrollbar for Chrome, Safari and Opera */
+html::-webkit-scrollbar {
+  display: none;
+}
+
+/* Selection color */
+::selection {
+  background-color: rgba(0, 0, 0, 0.1);
+}
+
+.dark ::selection {
+  background-color: rgba(255, 255, 255, 0.2);
+}
+
+/* Focus outline */
+:focus-visible {
+  outline: 2px solid currentColor;
+  outline-offset: 2px;
+}
+
+/* Link styles */
+a {
+  text-decoration: none;
+}
+
+/* Line clamp utility */
+.line-clamp-2 {
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+/* Logo Wave Animation */
+@keyframes logo-wave {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  40% {
+    transform: translateY(-6px);
+  }
+}
+
+.logo-wave-text span {
+  display: inline-block;
+}
+
+.logo-wave-text:hover span {
+  animation-name: logo-wave;
+  animation-duration: 0.5s;
+  animation-timing-function: ease-in-out;
+  animation-fill-mode: both;
+  animation-delay: var(--delay, 0s);
+}
+
+/* Cursor Blink Animation */
+@keyframes cursor-blink {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0;
+  }
+}
+
+.animate-cursor-blink {
+  animation: cursor-blink 0.8s ease-in-out infinite;
+}
+
+/* Wave Animation */
+@keyframes wave {
+  0% {
+    transform: translateX(0);
+  }
+  100% {
+    transform: translateX(-50%);
+  }
+}
+
+.animate-wave-slow {
+  animation: wave 45s linear infinite;
+}
+
+.animate-wave-fast {
+  animation: wave 20s linear infinite;
+}
+
+/* Swing Animation for hanging decorations */
+@keyframes swing {
+  0%,
+  100% {
+    transform: rotate(-3deg);
+  }
+  50% {
+    transform: rotate(3deg);
+  }
+}
+
+.animate-swing-slow {
+  animation: swing 4s ease-in-out infinite;
+  transform-origin: top center;
+}
+
+.animate-swing-medium {
+  animation: swing 3s ease-in-out infinite;
+  transform-origin: top center;
+}
+
+.animate-swing-fast {
+  animation: swing 2s ease-in-out infinite;
+  transform-origin: top center;
+}
+
+/* Scroll Up Animation for latest comments */
+@keyframes scroll-up {
+  0% {
+    transform: translateY(0);
+  }
+  100% {
+    transform: translateY(-50%);
+  }
+}
+
+.animate-scroll-up {
+  animation: scroll-up 12s linear infinite;
+}
+
+.animate-scroll-up:hover {
+  animation-play-state: paused;
+}
+
+/* Prose styles for markdown content */
+.prose h1 {
+  margin-top: 2rem;
+  margin-bottom: 1rem;
+}
+
+.prose h2 {
+  margin-top: 1.5rem;
+  margin-bottom: 0.75rem;
+}
+
+.prose p {
+  margin-bottom: 1rem;
+  line-height: 1.75;
+}
+
+.prose ul {
+  margin-bottom: 1rem;
+  list-style-type: disc;
+  padding-left: 1.5rem;
+}
+
+.prose li {
+  margin-bottom: 0.5rem;
+}
+
+.prose code {
+  padding: 0.2rem 0.4rem;
+  border-radius: 0.25rem;
+  font-size: 0.875em;
+}
+
+.prose strong {
+  font-weight: 600;
+  color: var(--foreground);
+}
+
+/* Hide scrollbar utility */
+.hide-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+
+.hide-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+/* Movie page custom scrollbar */
+.movie-scroll::-webkit-scrollbar {
+  height: 4px;
+}
+
+.movie-scroll::-webkit-scrollbar-track {
+  background: var(--color-movie-surface);
+}
+
+.movie-scroll::-webkit-scrollbar-thumb {
+  background: var(--color-movie-accent);
+  border-radius: 10px;
+}
+
+/* Content fade-in animation (from warp to content) */
+@keyframes content-fade-in {
+  from {
+    opacity: 0;
+    transform: scale(0.98);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+.animate-content-fade-in {
+  animation: content-fade-in 0.6s ease-out forwards;
+}
+
+/* Star flash animation */
+@keyframes star-flash {
+  0%,
+  100% {
+    opacity: 1;
+    transform: scale(1);
+    box-shadow: 0 0 12px 3px rgba(255, 255, 255, 0.6);
+  }
+  25% {
+    opacity: 0.2;
+    transform: scale(2.5);
+    box-shadow: 0 0 30px 10px rgba(255, 255, 255, 0.9);
+  }
+  50% {
+    opacity: 1;
+    transform: scale(0.8);
+    box-shadow: 0 0 8px 2px rgba(255, 255, 255, 0.4);
+  }
+  75% {
+    opacity: 0.4;
+    transform: scale(2);
+    box-shadow: 0 0 25px 8px rgba(255, 255, 255, 0.8);
+  }
+}
+
+.animate-star-flash {
+  animation: star-flash 0.4s ease-in-out;
+}
+
+/* Fade in up animation for gallery items */
+@keyframes fade-in-up {
+  from {
+    opacity: 0;
+    transform: translateY(30px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animate-fade-in-up {
+  animation: fade-in-up 0.6s ease-out both;
+}
+
+/* Corner float animation for book page corners */
+@keyframes corner-float {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-3px);
+  }
+}
+
+.animate-corner-float {
+  animation: corner-float 2.2s ease-in-out infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .animate-corner-float {
+    animation: none;
+  }
+}
+
+@keyframes flip-next {
+  from {
+    transform: rotateY(0deg);
+  }
+  to {
+    transform: rotateY(-180deg);
+  }
+}
+
+@keyframes flip-prev {
+  from {
+    transform: rotateY(0deg);
+  }
+  to {
+    transform: rotateY(180deg);
+  }
+}
+
+.animate-flip-next {
+  animation: flip-next 0.7s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+}
+
+.animate-flip-prev {
+  animation: flip-prev 0.7s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .animate-flip-next,
+  .animate-flip-prev {
+    animation-duration: 0.01ms;
+  }
+}
