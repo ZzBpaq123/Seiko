@@ -1,6 +1,6 @@
 # Seiko Manage UI
 
-本模块从 `D:\Project\seiko-web\seiko-manage` 迁入并更名为 `seiko-manage-ui`，与工作台、博客前台独立运行，默认端口为 3002。原 `.env.local` 未迁入，请从 `.env.example` 创建配置。登录和内容管理由本仓库的 `seiko-blog` 提供，默认端口为 1002，管理前台 API 基础地址为 `http://localhost:1002/api`。自定义管理前台域名时，通过后端 `BLOG_CORS_ALLOWED_ORIGINS` 配置允许的来源。
+本模块从 `D:\Project\seiko-web\seiko-manage` 迁入并更名为 `seiko-manage-ui`，与工作台、博客前台独立运行，默认端口为 3003。原 `.env.local` 未迁入，请从 `.env.example` 创建配置。登录和内容管理由本仓库的 `seiko-blog` 提供，默认端口为 1002，管理前台 API 基础地址为 `http://localhost:1002/api`。自定义管理前台域名时，通过后端 `BLOG_CORS_ALLOWED_ORIGINS` 配置允许的来源。
 
 Seiko Blog 后台管理系统前端，面向管理员的内容管理控制台（CRUD 仪表盘）。基于 Next.js 16 客户端渲染，运行时调用后端 `/api/manage/**` 接口，覆盖文章、标签、评论、足迹、相册 / 照片、公告、书籍、电影、资源、用户等模块的完整管理，并内置数据统计图表。
 
@@ -28,16 +28,16 @@ Seiko Blog 后台管理系统前端，面向管理员的内容管理控制台（
 cd seiko-manage-ui
 npm ci
 cp .env.example .env.local   # Windows: copy .env.example .env.local
-npm run dev     # http://localhost:3002
+npm run dev     # http://localhost:3003
 ```
 
 ## 可用命令
 
 | 命令 | 说明 |
 |------|------|
-| `npm run dev` | 启动开发服务器（端口 3002） |
+| `npm run dev` | 启动开发服务器（端口 3003） |
 | `npm run build` | 构建生产版本 |
-| `npm run start` | 启动生产服务器（端口 3002） |
+| `npm run start` | 启动生产服务器（端口 3003） |
 | `npm run lint` | ESLint 代码检查 |
 
 ## 功能特性
@@ -129,8 +129,8 @@ seiko-manage-ui/
 
 ## 相关项目
 
-- [Seiko Blog UI](../seiko-blog-ui/) — 博客公开前台，建议端口 3001
-- [Seiko Work UI](../seiko-work-ui/) — 工作台前台，端口 3000
+- [Seiko Blog UI](../seiko-blog-ui/) — 博客公开前台，端口 3001
+- [Seiko Work UI](../seiko-work-ui/) — 工作台前台，端口 3002
 - [Seiko Blog 后端](../seiko-blog/README.md) — 博客与管理 API，端口 1002
 
 ## 许可证

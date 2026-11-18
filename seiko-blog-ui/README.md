@@ -130,7 +130,7 @@ seiko-blog-ui/
 
 ## 快速开始
 
-本模块已迁入 Seiko 仓库，与 `seiko-work-ui` 独立运行。需要 Node.js 20.9+；同时启动工作台时，使用 `npm run dev -- --port 3001`（生产环境使用 `npm start -- --port 3001`）避免端口冲突。原 `.env.local` 未迁入，请按下文从示例创建配置。
+本模块已迁入 Seiko 仓库，与 `seiko-work-ui` 独立运行。需要 Node.js 20.9+；`npm run dev` 和 `npm start` 均固定使用端口 3001，与工作台 3002、管理前台 3003 分开，可同时运行。原 `.env.local` 未迁入，请按下文从示例创建配置。
 
 动态数据由本仓库的 `seiko-blog` 提供，默认端口为 1002，API 地址为 `http://localhost:1002/api/blog`。启动和数据库配置见 [博客后端说明](../seiko-blog/README.md)。自定义前台域名时，通过后端 `BLOG_CORS_ALLOWED_ORIGINS` 配置允许的来源。
 
@@ -138,7 +138,7 @@ seiko-blog-ui/
 # 安装依赖
 npm ci
 
-# 启动开发服务器（端口 3000）
+# 启动开发服务器（端口 3001）
 npm run dev
 
 # 构建生产版本
@@ -151,7 +151,7 @@ npm start
 npm run lint
 ```
 
-访问 [http://localhost:3000](http://localhost:3000)
+访问 [http://localhost:3001](http://localhost:3001)
 
 后端 API 默认地址：`http://localhost:1002/api/blog`，可通过环境变量 `NEXT_PUBLIC_API_BASE_URL` 覆盖。
 

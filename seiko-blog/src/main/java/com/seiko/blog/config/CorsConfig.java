@@ -22,7 +22,7 @@ public class CorsConfig {
 
     @Bean
     public FilterRegistrationBean<CorsFilter> corsFilter(
-            @Value("${blog.cors.allowed-origins:http://localhost:3001,http://localhost:3002}") String allowedOrigins) {
+            @Value("${blog.cors.allowed-origins:http://localhost:3001,http://localhost:3003}") String allowedOrigins) {
         CorsConfiguration config = new CorsConfiguration();
         // 博客前台和管理端来源；部署时通过 BLOG_CORS_ALLOWED_ORIGINS 配置
         config.setAllowedOrigins(Arrays.stream(allowedOrigins.split(","))

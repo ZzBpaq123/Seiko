@@ -19,9 +19,9 @@ pom.xml              # Maven 聚合入口
 seiko-common/        # 博客后端公共模块
 seiko-blog/          # 博客后端（Maven，端口 1002）
 seiko-work-service/   # 工作台后端（Maven，端口 1001）
-seiko-work-ui/        # 前端（Next.js，开发端口 3000）
-seiko-blog-ui/        # 博客公开前台（Next.js 16，建议开发端口 3001）
-seiko-manage-ui/      # 博客管理前台（Next.js 16，默认端口 3002）
+seiko-work-ui/        # 前端（Next.js，默认端口 3002）
+seiko-blog-ui/        # 博客公开前台（Next.js 16，默认端口 3001）
+seiko-manage-ui/      # 博客管理前台（Next.js 16，默认端口 3003）
 sql/                  # 数据库导出文件
 doc/                  # 项目文档
 ```
@@ -48,7 +48,7 @@ mysql -u root -p < seiko-work-service/src/main/resources/db/schema.sql
 | `REDIS_PASSWORD` | Redis 密码 | 空（实例要求认证时必填） |
 | `CRYPTO_KEY` | 敏感字段 AES-256-GCM 密钥，至少 32 字符，使用随机生成值 | 必填，无默认值 |
 | `MAIL_USERNAME` / `MAIL_PASSWORD` | 发件邮箱账号 / SMTP 授权码 | 空 |
-| `CORS_ALLOWED_ORIGINS` | 允许跨域来源 | `http://localhost:3000` |
+| `CORS_ALLOWED_ORIGINS` | 允许跨域来源 | `http://localhost:3002` |
 | `NEXT_PUBLIC_API_BASE_URL` | 前端请求的后端地址 | `http://localhost:1001` |
 
 ### 3. 启动后端
@@ -68,7 +68,7 @@ npm install
 npm run dev
 ```
 
-访问 http://localhost:3000
+访问 http://localhost:3002。三个前端的开发和生产启动脚本分别固定使用：博客前台 3001、工作台 3002、管理前台 3003，可同时运行。
 
 ### 5. 启动博客前台（可选）
 
@@ -79,10 +79,10 @@ cd seiko-blog-ui
 npm ci
 Copy-Item .env.example .env.local
 # 按实际博客后端地址修改 .env.local
-npm run dev -- --port 3001
+npm run dev
 ```
 
-访问 http://localhost:3001。生产构建使用 `npm run build`，启动使用 `npm start -- --port 3001`。
+访问 http://localhost:3001。生产构建使用 `npm run build`，启动使用 `npm start`（端口 3001）。
 
 博客前台的 `NEXT_PUBLIC_API_BASE_URL` 必须包含 `/api/blog`，默认是 `http://localhost:1002/api/blog`，连接本仓库的 `seiko-blog`。未启动博客后端时，部分页面降级显示空数据。地图功能需配置 `NEXT_PUBLIC_AMAP_KEY`。
 
@@ -100,7 +100,7 @@ Copy-Item .env.example .env.local
 npm run dev
 ```
 
-访问 http://localhost:3002。生产环境使用 `npm run build` 构建、`npm start` 启动（端口 3002）。
+访问 http://localhost:3003。生产环境使用 `npm run build` 构建、`npm start` 启动（端口 3003）。
 
 管理前台的 `NEXT_PUBLIC_API_BASE_URL` 默认是 `http://localhost:1002/api`，请求路径会追加 `/manage/**`，连接本仓库的 `seiko-blog`。足迹地图选点需配置 `NEXT_PUBLIC_AMAP_KEY` 和 `NEXT_PUBLIC_AMAP_SECURITY_CODE`。
 
@@ -284,4 +284,4 @@ java tools/RotateMailKey.java --self-test
 
 在 `seiko-work-ui` 中运行 `npm test`、`npx tsc --noEmit` 和 `npm run build`。请求测试覆盖独立取消、过期响应、用户隔离、写后失效与失败重试；日历测试对照旧算法验证随机数据、跨月、泳道和溢出数量。
 
-浏览器隔离预览可先运行 `npm start -- --hostname 127.0.0.1 --port 3002`，再运行 `node tests/preview-fixtures.cjs`，访问 `http://127.0.0.1:3003`。该预览仅使用虚构数据，不连接真实后端或保存业务数据。
+浏览器隔离预览可先运行 `npm start -- --hostname 127.0.0.1`（工作台端口 3002），再运行 `node tests/preview-fixtures.cjs`，访问 `http://127.0.0.1:3103`。该预览仅使用虚构数据，不连接真实后端或保存业务数据。

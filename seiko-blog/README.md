@@ -11,7 +11,7 @@
 | MySQL 数据库 | seiko_blog | seiko_work |
 | Redis 库 | 10 | 2（开发环境） |
 
-博客前台开发端口为 3001，管理前台为 3002。两个前台的 API 默认值已指向博客后端 1002；已有 .env.local 如配置了旧端口，需要同步修改并重新启动前台。生产部署也应给两个后端分配不同 Redis 库，避免同名会话和验证码键冲突。
+博客前台开发端口为 3001，管理前台为 3003。两个前台的 API 默认值已指向博客后端 1002；已有 .env.local 如配置了旧端口，需要同步修改并重新启动前台。生产部署也应给两个后端分配不同 Redis 库，避免同名会话和验证码键冲突。
 
 ## 数据库与上传文件
 
@@ -60,7 +60,7 @@
 | REDIS_PASSWORD | Redis 密码 | 空 |
 | MAIL_USERNAME / MAIL_PASSWORD | 发件账号 / SMTP 授权码 | 空 |
 | BLOG_UPLOAD_PATH | 已有或新上传文件的存储目录 | ./uploads |
-| BLOG_CORS_ALLOWED_ORIGINS | 允许的前台来源，以逗号分隔 | http://localhost:3001,http://localhost:3002 |
+| BLOG_CORS_ALLOWED_ORIGINS | 允许的前台来源，以逗号分隔 | http://localhost:3001,http://localhost:3003 |
 
 实际密码和原本机配置未迁入。需要本地配置文件时，可使用已被 Git 忽略的 src/main/resources/application-local.yml，并显式启用 dev,local；部署时应使用环境变量提供凭据。启动配置日志中的数据库、Redis 和邮件密码均隐藏。
 

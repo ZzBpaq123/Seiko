@@ -12,11 +12,11 @@ import static org.junit.jupiter.api.Assertions.assertNull;
 class CorsConfigTest {
 
     private final CorsFilter filter = new CorsConfig()
-            .corsFilter(" http://localhost:3001, http://localhost:3002, ").getFilter();
+            .corsFilter(" http://localhost:3001, http://localhost:3003, ").getFilter();
 
     @Test
     void allowsBlogAndManagePreflightWithTokenHeader() throws Exception {
-        for (String origin : new String[]{"http://localhost:3001", "http://localhost:3002"}) {
+        for (String origin : new String[]{"http://localhost:3001", "http://localhost:3003"}) {
             MockHttpServletResponse response = preflight(origin);
             assertEquals(200, response.getStatus());
             assertEquals(origin, response.getHeader("Access-Control-Allow-Origin"));

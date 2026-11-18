@@ -2,7 +2,7 @@
 // Does not connect to the real backend or write any data.
 const http = require("node:http");
 const upstream = process.env.PREVIEW_ORIGIN || "http://127.0.0.1:3002";
-const port = Number(process.env.FIXTURE_PORT || 3003);
+const port = Number(process.env.FIXTURE_PORT || 3103);
 const origin = "http://127.0.0.1:" + port;
 const mails = [101, 102].map((id, i) => ({ messageUid: String(id), fromAddress: "sender@example.com",
   fromName: "性能验证 " + (i + 1), subject: "测试邮件 " + (i + 1), contentText: "邮件正文 " + (i + 1),

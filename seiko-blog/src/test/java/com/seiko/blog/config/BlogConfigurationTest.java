@@ -23,7 +23,7 @@ class BlogConfigurationTest {
         assertEquals("false", env.getProperty("springdoc.api-docs.enabled"));
         assertEquals("false", env.getProperty("springdoc.swagger-ui.enabled"));
         assertEquals("./uploads", env.getProperty("blog.upload.path"));
-        assertEquals("http://localhost:3001,http://localhost:3002", env.getProperty("blog.cors.allowed-origins"));
+        assertEquals("http://localhost:3001,http://localhost:3003", env.getProperty("blog.cors.allowed-origins"));
     }
 
     @Test
