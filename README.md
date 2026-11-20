@@ -17,7 +17,8 @@
 ```
 pom.xml              # Maven 聚合入口
 seiko-common/        # 博客后端公共模块
-seiko-blog/          # 博客后端（Maven，端口 1002）
+seiko-blog-service/   # 博客公开后端（Maven，端口 1002）
+seiko-manage-service/ # 博客管理后端（Maven，端口 1003）
 seiko-work-service/   # 工作台后端（Maven，端口 1001）
 seiko-work-ui/        # 前端（Next.js，默认端口 3002）
 seiko-blog-ui/        # 博客公开前台（Next.js 16，默认端口 3001）
@@ -54,6 +55,7 @@ mysql -u root -p < seiko-work-service/src/main/resources/db/schema.sql
 ### 3. 启动后端
 
 ```bash
+mvn -pl seiko-common -am install
 cd seiko-work-service
 mvn spring-boot:run "-Dspring-boot.run.profiles=dev"
 ```
@@ -84,7 +86,7 @@ npm run dev
 
 访问 http://localhost:3001。生产构建使用 `npm run build`，启动使用 `npm start`（端口 3001）。
 
-博客前台的 `NEXT_PUBLIC_API_BASE_URL` 必须包含 `/api/blog`，默认是 `http://localhost:1002/api/blog`，连接本仓库的 `seiko-blog`。未启动博客后端时，部分页面降级显示空数据。地图功能需配置 `NEXT_PUBLIC_AMAP_KEY`。
+博客前台的 `NEXT_PUBLIC_API_BASE_URL` 必须包含 `/api/blog`，默认是 `http://localhost:1002/api/blog`，连接本仓库的 `seiko-blog-service`。未启动博客后端时，部分页面降级显示空数据。地图功能需配置 `NEXT_PUBLIC_AMAP_KEY`。
 
 版本管理中不包含原 `.env.local`、依赖目录和构建缓存。更多页面与配置说明见 [博客前台 README](seiko-blog-ui/README.md)。
 
@@ -102,25 +104,28 @@ npm run dev
 
 访问 http://localhost:3003。生产环境使用 `npm run build` 构建、`npm start` 启动（端口 3003）。
 
-管理前台的 `NEXT_PUBLIC_API_BASE_URL` 默认是 `http://localhost:1002/api`，请求路径会追加 `/manage/**`，连接本仓库的 `seiko-blog`。足迹地图选点需配置 `NEXT_PUBLIC_AMAP_KEY` 和 `NEXT_PUBLIC_AMAP_SECURITY_CODE`。
+管理前台的 `NEXT_PUBLIC_API_BASE_URL` 默认是 `http://localhost:1003/api`，请求路径会追加 `/manage/**`，连接本仓库的 `seiko-manage-service`。已有 `.env.local` 中的旧地址需同步修改并重启前台。足迹地图选点需配置 `NEXT_PUBLIC_AMAP_KEY` 和 `NEXT_PUBLIC_AMAP_SECURITY_CODE`。
 
 原 `.env.local` 未迁入；依赖和构建缓存不纳入版本管理。更多说明见 [管理前台 README](seiko-manage-ui/README.md)。
 
-### 7. 启动博客后端（可选）
+### 7. 启动博客与管理后端（可选）
 
-博客后端已从原项目迁入本仓库的 `seiko-blog/` 和 `seiko-common/`，独立运行在端口 1002。工作台后端仍运行在端口 1001，两个服务使用独立的数据库和 Redis 库。
+原 seiko-blog 已拆分为 seiko-blog-service（公开 API，端口 1002）和 seiko-manage-service（管理 API，端口 1003），均依赖 seiko-common 中的共享模型。工作台仍使用端口 1001。
 
-先准备 `seiko_blog` 数据库：已有数据库可直接复用；新库初始化及上传目录配置见 [博客后端说明](seiko-blog/README.md)。仓库现有 `sql/seiko_blog.sql` 是包含数据和删表语句的导出文件，不要对已有数据库直接导入。
+两个博客相关服务共用 seiko_blog 数据库和 Redis 库 10，使后台内容修改能失效公开端缓存；工作台使用独立数据库和 Redis 库。已有博客数据库可以直接复用，初始化及共享上传目录说明见 [博客服务说明](seiko-blog-service/README.md)。sql/seiko_blog.sql 含数据和删表语句，不要对已有数据库直接导入。
 
 在仓库根目录执行：
 
 ```powershell
-# 在当前终端设置 MYSQL_PASSWORD；Redis 需要密码时同时设置 REDIS_PASSWORD
-mvn -pl seiko-blog -am clean install
-mvn -pl seiko-blog spring-boot:run "-Dspring-boot.run.profiles=dev"
+# 设置 MYSQL_PASSWORD；Redis 需要密码时设置 REDIS_PASSWORD
+# 两服务的 BLOG_UPLOAD_PATH 应设置为相同的绝对目录
+mvn -pl seiko-blog-service,seiko-manage-service -am clean install
+# 分别在两个终端启动
+mvn -pl seiko-blog-service spring-boot:run "-Dspring-boot.run.profiles=dev"
+mvn -pl seiko-manage-service spring-boot:run "-Dspring-boot.run.profiles=dev"
 ```
 
-开发环境接口文档：[Swagger UI](http://localhost:1002/swagger-ui.html)。打包文件是 `seiko-blog/target/seiko-blog-1.0.0.jar`。数据库和邮件凭据由环境变量提供；原本机配置、上传文件和数据库数据不会自动复制。完整配置、测试与生产启动命令见 [博客后端说明](seiko-blog/README.md)。
+开发文档：[博客 Swagger UI](http://localhost:1002/swagger-ui.html)、[管理 Swagger UI](http://localhost:1003/swagger-ui.html)。可执行包分别是 seiko-blog-service/target/seiko-blog-service-1.0.0.jar 和 seiko-manage-service/target/seiko-manage-service-1.0.0.jar。完整配置与测试命令见 [博客服务说明](seiko-blog-service/README.md) 和 [管理服务说明](seiko-manage-service/README.md)。
 
 ## 常用命令
 

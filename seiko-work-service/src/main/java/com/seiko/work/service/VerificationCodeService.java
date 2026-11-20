@@ -1,9 +1,9 @@
 package com.seiko.work.service;
 
-import com.seiko.work.base.ResultCode;
+import com.seiko.common.result.ResultCode;
 import com.seiko.work.config.properties.SecurityProperties;
 import com.seiko.work.enums.VerificationPurpose;
-import com.seiko.work.exception.BusinessException;
+import com.seiko.common.exception.BusinessException;
 import com.seiko.work.util.EmailCodeUtil;
 import lombok.RequiredArgsConstructor;
 import org.springframework.core.io.ClassPathResource;

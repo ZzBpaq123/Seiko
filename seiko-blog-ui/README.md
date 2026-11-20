@@ -132,7 +132,7 @@ seiko-blog-ui/
 
 本模块已迁入 Seiko 仓库，与 `seiko-work-ui` 独立运行。需要 Node.js 20.9+；`npm run dev` 和 `npm start` 均固定使用端口 3001，与工作台 3002、管理前台 3003 分开，可同时运行。原 `.env.local` 未迁入，请按下文从示例创建配置。
 
-动态数据由本仓库的 `seiko-blog` 提供，默认端口为 1002，API 地址为 `http://localhost:1002/api/blog`。启动和数据库配置见 [博客后端说明](../seiko-blog/README.md)。自定义前台域名时，通过后端 `BLOG_CORS_ALLOWED_ORIGINS` 配置允许的来源。
+动态数据由本仓库的 `seiko-blog-service` 提供，默认端口为 1002，API 地址为 `http://localhost:1002/api/blog`。启动和数据库配置见 [博客后端说明](../seiko-blog-service/README.md)。自定义前台域名时，通过后端 `BLOG_CORS_ALLOWED_ORIGINS` 配置允许的来源。
 
 ```bash
 # 安装依赖
@@ -196,7 +196,7 @@ npm run lint
 | 最新评论展示条数 | `src/components/LatestComments.tsx` `MAX_DISPLAY` | 默认 5 |
 | 个人资料 | `src/app/page.tsx` 侧边栏区域 | 名称、简介、社交链接 |
 | 网站元数据 | `src/app/layout.tsx` `metadata` | 标题、描述、SEO |
-| 外部图片域名 | `next.config.ts` `images.remotePatterns` | 已允许 picsum.photos、images.unsplash.com、localhost:1002/uploads；全局 `unoptimized: true` |
+| 外部图片域名 | `next.config.ts` `images.remotePatterns` | 已允许 picsum.photos、images.unsplash.com、localhost:1002/uploads、localhost:1003/uploads；全局 `unoptimized: true` |
 | API 基础地址 | 环境变量 `NEXT_PUBLIC_API_BASE_URL` | 默认 `http://localhost:1002/api/blog` |
 | 高德地图 key | 环境变量 `NEXT_PUBLIC_AMAP_KEY` | 足迹页地图展示，未配置时跳过地图加载 |
 

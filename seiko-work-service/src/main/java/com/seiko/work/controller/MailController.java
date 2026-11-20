@@ -2,7 +2,7 @@ package com.seiko.work.controller;
 
 import cn.dev33.satoken.annotation.SaCheckLogin;
 import cn.dev33.satoken.stp.StpUtil;
-import com.seiko.work.base.Result;
+import com.seiko.common.result.Result;
 import com.seiko.work.dto.MailDTO;
 import com.seiko.work.vo.MailAccountVO;
 import com.seiko.work.vo.MailMessageVO;

@@ -3,7 +3,7 @@ package com.seiko.work.entity;
 import com.baomidou.mybatisplus.annotation.TableField;
 import com.baomidou.mybatisplus.annotation.TableName;
 import com.fasterxml.jackson.annotation.JsonProperty;
-import com.seiko.work.base.BaseEntity;
+import com.seiko.common.base.BaseEntity;
 import com.seiko.work.config.handler.EncryptedStringTypeHandler;
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.Data;

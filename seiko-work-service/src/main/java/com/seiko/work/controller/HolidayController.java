@@ -1,7 +1,7 @@
 package com.seiko.work.controller;
 
 import cn.dev33.satoken.annotation.SaCheckLogin;
-import com.seiko.work.base.Result;
+import com.seiko.common.result.Result;
 import com.seiko.work.service.HolidayService;
 import com.seiko.work.vo.HolidayVO;
 import io.swagger.v3.oas.annotations.Operation;

@@ -1,5 +1,8 @@
 package com.seiko.work;
 
+import com.seiko.common.config.CorsConfig;
+import com.seiko.common.config.MyBatisPlusConfig;
+import org.springframework.context.annotation.Import;
 import org.mybatis.spring.annotation.MapperScan;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
@@ -10,6 +13,7 @@ import org.springframework.boot.autoconfigure.SpringBootApplication;
  * @author seiko
  */
 @SpringBootApplication
+@Import({CorsConfig.class, MyBatisPlusConfig.class})
 @MapperScan("com.seiko.work.**.mapper")
 public class SeikoWorkApplication {
 

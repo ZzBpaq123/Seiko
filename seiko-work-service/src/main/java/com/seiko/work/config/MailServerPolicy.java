@@ -1,9 +1,9 @@
 package com.seiko.work.config;
 
-import com.seiko.work.base.ResultCode;
+import com.seiko.common.result.ResultCode;
 import com.seiko.work.entity.Mail;
 import com.seiko.work.enums.MailProviderEnum;
-import com.seiko.work.exception.BusinessException;
+import com.seiko.common.exception.BusinessException;
 import org.springframework.stereotype.Component;
 
 import java.util.Arrays;

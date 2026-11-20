@@ -1,10 +1,10 @@
 package com.seiko.work.service.impl;
 
 import cn.dev33.satoken.stp.StpUtil;
-import com.seiko.work.base.ResultCode;
+import com.seiko.common.result.ResultCode;
 import com.seiko.work.config.properties.SecurityProperties;
 import com.seiko.work.constant.RedisKey;
-import com.seiko.work.exception.BusinessException;
+import com.seiko.common.exception.BusinessException;
 import com.seiko.work.dto.ChangePasswordDTO;
 import com.seiko.work.dto.LoginDTO;
 import com.seiko.work.dto.PhoneLoginDTO;

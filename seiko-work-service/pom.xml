@@ -32,6 +32,12 @@
     </properties>
 
     <dependencies>
+        <dependency>
+            <groupId>com.seiko</groupId>
+            <artifactId>seiko-common</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+
         <!-- ========== Spring Boot Starters ========== -->
         <dependency>
             <groupId>org.springframework.boot</groupId>

@@ -3,7 +3,7 @@ package com.seiko.work.controller;
 import cn.dev33.satoken.annotation.SaCheckLogin;
 import cn.dev33.satoken.stp.StpUtil;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
-import com.seiko.work.base.Result;
+import com.seiko.common.result.Result;
 import com.seiko.work.dto.BillDTO;
 import com.seiko.work.enums.BillStatPeriodEnum;
 import com.seiko.work.service.BillService;

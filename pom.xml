@@ -21,7 +21,8 @@
 
     <modules>
         <module>seiko-common</module>
-        <module>seiko-blog</module>
+        <module>seiko-blog-service</module>
+        <module>seiko-manage-service</module>
         <module>seiko-work-service</module>
     </modules>
 
