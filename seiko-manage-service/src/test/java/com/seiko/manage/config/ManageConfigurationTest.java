@@ -1,6 +1,11 @@
 package com.seiko.manage.config;
 
 import org.junit.jupiter.api.Test;
+import com.zaxxer.hikari.HikariDataSource;
+import org.springframework.boot.autoconfigure.AutoConfigurations;
+import org.springframework.boot.autoconfigure.jdbc.DataSourceAutoConfiguration;
+import org.springframework.boot.test.context.ConfigDataApplicationContextInitializer;
+import org.springframework.boot.test.context.runner.ApplicationContextRunner;
 import org.springframework.boot.env.YamlPropertySourceLoader;
 import org.springframework.core.env.PropertySource;
 import org.springframework.core.io.ClassPathResource;
@@ -14,6 +19,22 @@ import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class ManageConfigurationTest {
+
+    @Test
+    void createsMysqlDataSourceWithoutSelectingAProfile() {
+        new ApplicationContextRunner()
+                .withInitializer(new ConfigDataApplicationContextInitializer())
+                .withConfiguration(AutoConfigurations.of(DataSourceAutoConfiguration.class))
+                .withPropertyValues("MYSQL_PASSWORD=test-password", "MYSQL_HOST=db.example.test",
+                        "MYSQL_PORT=3307", "BLOG_MYSQL_DATABASE=test_blog")
+                .run(context -> {
+                    HikariDataSource pool = context.getBean(HikariDataSource.class);
+                    assertEquals("com.mysql.cj.jdbc.Driver", pool.getDriverClassName());
+                    assertTrue(pool.getJdbcUrl().startsWith("jdbc:mysql://db.example.test:3307/test_blog?"));
+                    assertEquals("test-password", pool.getPassword());
+                    assertEquals("10", context.getEnvironment().getProperty("spring.data.redis.database"));
+                });
+    }
 
     @Test
     void baseConfigurationUsesSeparatePortAndDisablesDocumentation() throws IOException {

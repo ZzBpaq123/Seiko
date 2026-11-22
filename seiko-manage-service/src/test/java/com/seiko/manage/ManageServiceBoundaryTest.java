@@ -26,11 +26,11 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
-@SpringBootTest(properties = "spring.autoconfigure.exclude="
+@SpringBootTest(properties = {"spring.datasource.password=test-password", "spring.autoconfigure.exclude="
         + "org.springframework.boot.autoconfigure.jdbc.DataSourceAutoConfiguration,"
         + "com.baomidou.mybatisplus.autoconfigure.MybatisPlusAutoConfiguration,"
         + "org.springframework.boot.autoconfigure.data.redis.RedisAutoConfiguration,"
-        + "org.springframework.boot.autoconfigure.data.redis.RedisRepositoriesAutoConfiguration")
+        + "org.springframework.boot.autoconfigure.data.redis.RedisRepositoriesAutoConfiguration"})
 @AutoConfigureMockMvc
 @MockBean({AlbumMapper.class, BookMapper.class, CommentMapper.class, DictItemMapper.class,
         DictTypeMapper.class, FootprintMapper.class, LogMapper.class, MovieMapper.class,

@@ -22,11 +22,11 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.assertj.core.api.Assertions.assertThat;
 
-@SpringBootTest(properties = "spring.autoconfigure.exclude="
+@SpringBootTest(properties = {"spring.datasource.password=test-password", "spring.autoconfigure.exclude="
         + "org.springframework.boot.autoconfigure.jdbc.DataSourceAutoConfiguration,"
         + "com.baomidou.mybatisplus.autoconfigure.MybatisPlusAutoConfiguration,"
         + "org.springframework.boot.autoconfigure.data.redis.RedisAutoConfiguration,"
-        + "org.springframework.boot.autoconfigure.data.redis.RedisRepositoriesAutoConfiguration")
+        + "org.springframework.boot.autoconfigure.data.redis.RedisRepositoriesAutoConfiguration"})
 @AutoConfigureMockMvc
 @MockBean({AlbumMapper.class, BookMapper.class, CommentMapper.class, FootprintMapper.class,
         MovieMapper.class, NoticeMapper.class, PhotoMapper.class, PostMapper.class,
