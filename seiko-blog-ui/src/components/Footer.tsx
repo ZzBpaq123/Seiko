@@ -14,7 +14,7 @@ export default function Footer({ textClass }: { textClass: string }) {
         />
       </div>
 
-      <div className="mx-auto max-w-4xl px-4 pt-2 pb-4">
+      <div className="mx-auto max-w-4xl px-4 pb-4">
         <div className="flex flex-col items-center gap-3 text-center">
           <p className={`text-base ${textClass}`}>
             云想衣裳花想容，春风拂槛露华浓。若非群玉山头见，会向瑶台月下逢。
