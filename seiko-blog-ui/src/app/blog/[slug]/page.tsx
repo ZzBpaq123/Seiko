@@ -45,6 +45,7 @@ export default async function BlogPostPage({ params }: BlogPostPageProps) {
   }
 
   const headings = extractHeadings(post.content);
+  const articleId = `reading-post-${post.id}`;
 
   return (
     <>
@@ -72,7 +73,7 @@ export default async function BlogPostPage({ params }: BlogPostPageProps) {
               )}
 
               {/* Article */}
-              <article className="rounded-lg border border-zinc-200 bg-white p-8 dark:border-zinc-800 dark:bg-zinc-900">
+              <article id={articleId} className="rounded-lg border border-zinc-200 bg-white p-8 dark:border-zinc-800 dark:bg-zinc-900">
                 {/* Header */}
                 <header className="mb-8 border-b border-zinc-200 pb-8 dark:border-zinc-800">
                   <h1 className="text-3xl font-bold text-zinc-900 dark:text-zinc-100 sm:text-4xl">
@@ -119,7 +120,7 @@ export default async function BlogPostPage({ params }: BlogPostPageProps) {
         </div>
       </div>
 
-      <ReadingFloatButtons />
+      <ReadingFloatButtons articleId={articleId} />
     </>
   );
 }
