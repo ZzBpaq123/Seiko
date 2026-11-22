@@ -2,9 +2,13 @@ package com.seiko.manage.config;
 
 import cn.dev33.satoken.context.SaHolder;
 import cn.dev33.satoken.context.model.SaRequest;
+import cn.dev33.satoken.exception.NotLoginException;
+import cn.dev33.satoken.exception.NotPermissionException;
+import cn.dev33.satoken.exception.NotRoleException;
 import cn.dev33.satoken.filter.SaServletFilter;
+import cn.dev33.satoken.json.SaJsonTemplate;
 import cn.dev33.satoken.stp.StpUtil;
-import cn.dev33.satoken.util.SaResult;
+import com.seiko.common.result.Result;
 import com.seiko.common.result.ResultCode;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -27,7 +31,7 @@ public class SaTokenConfig {
      * 注册 Sa-Token 全局过滤器
      */
     @Bean
-    public SaServletFilter saServletFilter() {
+    public SaServletFilter saServletFilter(SaJsonTemplate jsonTemplate) {
         return new SaServletFilter()
                 // 指定拦截路由
                 .addInclude("/**")
@@ -63,10 +67,18 @@ public class SaTokenConfig {
                     // 4. 其余接口默认需要登录
                     StpUtil.checkLogin();
                 })
-                // 异常处理函数
                 .setError(e -> {
-                    log.error("Sa-Token 异常: {}", e.getMessage());
-                    return SaResult.error(e.getMessage()).setCode(ResultCode.UNAUTHORIZED.getCode());
+                    ResultCode code;
+                    if (e instanceof NotLoginException) {
+                        code = ResultCode.UNAUTHORIZED;
+                    } else if (e instanceof NotRoleException || e instanceof NotPermissionException) {
+                        code = ResultCode.FORBIDDEN;
+                    } else {
+                        log.error("认证过滤器异常", e);
+                        code = ResultCode.ERROR;
+                    }
+                    SaHolder.getResponse().setHeader("Content-Type", "application/json;charset=UTF-8");
+                    return jsonTemplate.toJsonString(Result.error(code));
                 });
     }
 

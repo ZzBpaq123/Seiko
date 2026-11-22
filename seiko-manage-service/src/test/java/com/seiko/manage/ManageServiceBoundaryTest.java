@@ -12,6 +12,7 @@ import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.context.ApplicationContext;
 import org.springframework.data.redis.connection.RedisConnectionFactory;
 import org.springframework.data.redis.core.StringRedisTemplate;
+import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.web.servlet.mvc.method.annotation.RequestMappingHandlerMapping;
 
@@ -19,6 +20,7 @@ import javax.sql.DataSource;
 import java.util.Set;
 import java.util.stream.Collectors;
 
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.mockStatic;
@@ -83,6 +85,8 @@ class ManageServiceBoundaryTest {
 
         for (String path : new String[]{"/api/manage/post/list", "/api/manage/user/info"}) {
             mvc.perform(get(path))
+                    .andExpect(status().isOk())
+                    .andExpect(content().contentTypeCompatibleWith(MediaType.APPLICATION_JSON))
                     .andExpect(jsonPath("$.code").value(401));
         }
     }
@@ -93,7 +97,9 @@ class ManageServiceBoundaryTest {
             stp.when(() -> StpUtil.checkRole("admin")).thenThrow(new NotRoleException("admin"));
 
             mvc.perform(get("/api/manage/post/list"))
-                    .andExpect(jsonPath("$.code").value(401));
+                    .andExpect(status().isOk())
+                    .andExpect(content().contentTypeCompatibleWith(MediaType.APPLICATION_JSON))
+                    .andExpect(jsonPath("$.code").value(403));
 
             stp.verify(StpUtil::checkLogin);
             stp.verify(() -> StpUtil.checkRole("admin"));

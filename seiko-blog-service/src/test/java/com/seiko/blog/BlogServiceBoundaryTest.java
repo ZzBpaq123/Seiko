@@ -53,6 +53,14 @@ class BlogServiceBoundaryTest {
     }
 
     @Test
+    void malformedJsonUsesTheParameterErrorCode() throws Exception {
+        mvc.perform(post("/api/blog/code/email/code")
+                        .contentType("application/json").content("{"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.code").value(400));
+    }
+
+    @Test
     void startsWithOnlyPublicApisAndOwnsReadCountFlush() {
         Set<String> paths = mappings.getHandlerMethods().entrySet().stream()
                 .filter(entry -> isBlogController(entry.getValue()))

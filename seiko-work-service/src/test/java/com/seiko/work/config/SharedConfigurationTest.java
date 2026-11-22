@@ -1,5 +1,8 @@
 package com.seiko.work.config;
 
+import cn.dev33.satoken.SaManager;
+import cn.dev33.satoken.spring.SaTokenContextForSpringInJakartaServlet;
+import cn.dev33.satoken.spring.json.SaJsonTemplateForJackson;
 import com.baomidou.mybatisplus.extension.plugins.MybatisPlusInterceptor;
 import com.baomidou.mybatisplus.extension.plugins.inner.PaginationInnerInterceptor;
 import com.seiko.common.config.CorsConfig;
@@ -12,17 +15,22 @@ import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.context.ConfigDataApplicationContextInitializer;
 import org.springframework.boot.test.context.runner.ApplicationContextRunner;
 import org.springframework.boot.web.servlet.FilterRegistrationBean;
+import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 import org.springframework.web.filter.CorsFilter;
+import org.springframework.web.filter.RequestContextFilter;
+
+import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.options;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
 class SharedConfigurationTest {
     @Test
-    void workKeepsPageLimitPreflightAndHttpErrorStatus() {
+    void workKeepsPageLimitPreflightAndReturnsErrorsInTheResponseBody() {
         new ApplicationContextRunner()
                 .withInitializer(new ConfigDataApplicationContextInitializer())
                 .withPropertyValues("seiko.cors.allowed-origins=https://*.example.org")
@@ -45,8 +53,34 @@ class SharedConfigurationTest {
                             .andExpect(header().string("Access-Control-Allow-Origin", "https://work.example.org"))
                             .andExpect(header().string("Access-Control-Max-Age", "1800"));
                     mvc.perform(get("/api/holidays/2026"))
-                            .andExpect(status().isTooManyRequests())
+                            .andExpect(status().isOk())
                             .andExpect(jsonPath("$.code").value(1008));
+                    mvc.perform(get("/api/holidays/invalid"))
+                            .andExpect(status().isOk())
+                            .andExpect(jsonPath("$.code").value(400));
+                    mvc.perform(post("/api/holidays/2026"))
+                            .andExpect(status().isOk())
+                            .andExpect(jsonPath("$.code").value(405));
                 });
+    }
+
+    @Test
+    void authenticationFilterReturnsHttp200WithUnauthorizedCode() throws Exception {
+        var previousContext = SaManager.getSaTokenContext();
+        try {
+            SaManager.setSaTokenContext(new SaTokenContextForSpringInJakartaServlet());
+            var filter = new SaTokenConfig().saServletFilter(new SaJsonTemplateForJackson());
+            var mvc = MockMvcBuilders.standaloneSetup(new HolidayController(year -> List.of()))
+                    .addFilters(new RequestContextFilter(), filter)
+                    .build();
+
+            mvc.perform(get("/api/holidays/2026"))
+                    .andExpect(status().isOk())
+                    .andExpect(content().contentTypeCompatibleWith(MediaType.APPLICATION_JSON))
+                    .andExpect(jsonPath("$.code").value(401))
+                    .andExpect(jsonPath("$.message").value(ResultCode.UNAUTHORIZED.getMessage()));
+        } finally {
+            SaManager.setSaTokenContext(previousContext);
+        }
     }
 }

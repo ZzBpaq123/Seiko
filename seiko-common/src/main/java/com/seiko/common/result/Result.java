@@ -16,7 +16,7 @@ public class Result<T> implements Serializable {
 
     private static final long serialVersionUID = 1L;
 
-    @Schema(description = "状态码，200表示成功")
+    @Schema(description = "业务状态码，200 表示成功")
     private Integer code;
 
     @Schema(description = "返回消息")

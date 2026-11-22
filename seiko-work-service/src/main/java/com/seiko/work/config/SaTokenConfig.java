@@ -1,15 +1,13 @@
 package com.seiko.work.config;
 
 import cn.dev33.satoken.context.SaHolder;
+import cn.dev33.satoken.exception.NotLoginException;
 import cn.dev33.satoken.filter.SaServletFilter;
 import cn.dev33.satoken.interceptor.SaInterceptor;
+import cn.dev33.satoken.json.SaJsonTemplate;
 import cn.dev33.satoken.stp.StpUtil;
-import cn.dev33.satoken.util.SaResult;
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.seiko.common.result.Result;
 import com.seiko.common.result.ResultCode;
-import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -23,10 +21,7 @@ import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
  */
 @Slf4j
 @Configuration
-@RequiredArgsConstructor
 public class SaTokenConfig implements WebMvcConfigurer {
-
-    private final ObjectMapper objectMapper;
 
     /**
      * 注册 Sa-Token 注解拦截器，使 @SaCheckLogin 等注解生效
@@ -40,7 +35,7 @@ public class SaTokenConfig implements WebMvcConfigurer {
      * 注册 Sa-Token 全局过滤器
      */
     @Bean
-    public SaServletFilter saServletFilter() {
+    public SaServletFilter saServletFilter(SaJsonTemplate jsonTemplate) {
         return new SaServletFilter()
                 // 指定拦截路由
                 .addInclude("/**")
@@ -56,15 +51,14 @@ public class SaTokenConfig implements WebMvcConfigurer {
                     // 5. 其余接口默认需要登录
                     StpUtil.checkLogin();
                 })
-                // 异常处理函数：异常详情仅记录日志，响应统一返回固定文案
                 .setError(e -> {
-                    SaHolder.getResponse().setStatus(401);
-                    SaHolder.getResponse().setHeader("Content-Type", "application/json;charset=UTF-8");
-                    try {
-                        return objectMapper.writeValueAsString(Result.error(ResultCode.UNAUTHORIZED));
-                    } catch (JsonProcessingException serializationError) {
-                        return "{\"code\":401,\"message\":\"未登录或登录已过期\",\"data\":null}";
+                    ResultCode code = ResultCode.UNAUTHORIZED;
+                    if (!(e instanceof NotLoginException)) {
+                        log.error("认证过滤器异常", e);
+                        code = ResultCode.ERROR;
                     }
+                    SaHolder.getResponse().setHeader("Content-Type", "application/json;charset=UTF-8");
+                    return jsonTemplate.toJsonString(Result.error(code));
                 });
     }
 

@@ -15,7 +15,6 @@ import java.io.IOException;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class BlogConfigurationTest {
@@ -41,7 +40,7 @@ class BlogConfigurationTest {
         MockEnvironment env = configuration();
         assertEquals("seiko-blog-service", env.getProperty("spring.application.name"));
         assertEquals("1002", env.getProperty("server.port"));
-        assertNull(env.getProperty("spring.profiles.active"));
+        assertEquals("dev", env.getProperty("spring.profiles.active"));
         assertEquals("false", env.getProperty("springdoc.api-docs.enabled"));
         assertEquals("false", env.getProperty("springdoc.swagger-ui.enabled"));
         assertEquals("./uploads", env.getProperty("blog.upload.path"));
