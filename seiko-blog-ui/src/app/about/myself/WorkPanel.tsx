@@ -1,6 +1,7 @@
 "use client";
 
-import { useEffect, useRef, useCallback } from "react";
+import { useEffect, useRef, useCallback, useState } from "react";
+import { loadAMap } from "@/utils/amap";
 
 interface AMapMap {
   add(marker: AMapMarker): void;
@@ -45,25 +46,13 @@ const SHIJIAZHUANG: [number, number] = [114.438426, 38.040975];
 
 /** 标记点主题色 */
 const MARKER_COLOR = "#3b82f6";
+const mapKey = process.env.NEXT_PUBLIC_AMAP_KEY;
 
 export default function WorkPanel() {
   const mapRef = useRef<HTMLDivElement>(null);
   const mapInstanceRef = useRef<AMapMap | null>(null);
 
-  const loadScript = useCallback((src: string): Promise<void> => {
-    return new Promise((resolve, reject) => {
-      if (document.querySelector(`script[src*="${src.split("?")[0]}"]`)) {
-        resolve();
-        return;
-      }
-      const script = document.createElement("script");
-      script.src = src;
-      script.async = true;
-      script.onload = () => resolve();
-      script.onerror = () => reject(new Error(`Failed to load ${src}`));
-      document.head.appendChild(script);
-    });
-  }, []);
+  const [mapState, setMapState] = useState<"loading" | "ready" | "unavailable">(mapKey ? "loading" : "unavailable");
 
   const createMap = useCallback(() => {
     const AMap = getAMap();
@@ -137,25 +126,24 @@ export default function WorkPanel() {
   }, []);
 
   useEffect(() => {
-    const mapKey = process.env.NEXT_PUBLIC_AMAP_KEY;
-    if (!mapKey) {
-      console.warn("未配置 NEXT_PUBLIC_AMAP_KEY，跳过工作地图加载");
-      return;
-    }
-    loadScript(`https://webapi.amap.com/maps?v=2.0&key=${mapKey}`)
-      .then(() => createMap())
-      .catch((err) => console.error("高德地图加载失败:", err));
-
+    if (!mapKey) return;
+    let cancelled = false;
+    loadAMap(mapKey).then(() => {
+      if (cancelled) return;
+      createMap();
+      setMapState(mapInstanceRef.current ? "ready" : "unavailable");
+    }).catch(() => {
+      if (!cancelled) setMapState("unavailable");
+    });
     return () => {
-      if (mapInstanceRef.current) {
-        mapInstanceRef.current.destroy();
-        mapInstanceRef.current = null;
-      }
+      cancelled = true;
+      mapInstanceRef.current?.destroy();
+      mapInstanceRef.current = null;
     };
-  }, [loadScript, createMap]);
+  }, [createMap]);
 
   return (
-    <section className="flex h-full w-screen shrink-0 flex-col items-center justify-center px-4 sm:px-6 lg:px-8">
+    <section className="flex min-h-full w-full flex-col items-center justify-center px-4 sm:px-6 lg:px-8">
       <div className="w-full max-w-5xl mx-auto">
         <h2 className="mb-6 font-bold text-stone-900 text-3xl sm:text-4xl">
           我的工作地
@@ -173,7 +161,14 @@ export default function WorkPanel() {
 
         {/* 小地图 - 定位到石家庄 */}
         <div className="overflow-hidden rounded-2xl border border-stone-200 bg-white shadow-[0_0_40px_rgba(59,130,246,0.15)]">
-          <div ref={mapRef} className="h-70 w-full sm:h-90" />
+          {mapState !== "unavailable" && (
+            <div ref={mapRef} className="h-70 w-full sm:h-90" aria-label="石家庄地图" />
+          )}
+          {mapState !== "ready" && (
+            <p role="status" className="p-4 text-sm text-stone-600">
+              {mapState === "loading" ? "正在加载地图…" : "工作地地图暂时无法显示。"}
+            </p>
+          )}
         </div>
       </div>
     </section>

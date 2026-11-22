@@ -48,12 +48,13 @@ export default function Header({ overlayMode = false }: HeaderProps) {
     pageHeaderStyles,
     defaultHeaderStyle,
   );
-  const isDarkHeroPage = ["/", "/blog", "/explore/movie", "/explore/game"].includes(pathname);
+  const isTagPage = pathname.startsWith("/tag/");
+  const isDarkHeroPage = isTagPage || ["/", "/blog", "/explore/movie", "/explore/game"].includes(pathname);
   const dropdownRef = useRef<HTMLDivElement>(null);
   const dropdownTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   const isActive = (href: string) =>
-    href === "/" ? pathname === "/" : pathname.startsWith(href);
+    href === "/" ? pathname === "/" : pathname.startsWith(href) || (href === "/blog" && isTagPage);
 
   const handleGalleryClick = () => {
     if (pathname === "/gallery") return;
@@ -234,6 +235,8 @@ export default function Header({ overlayMode = false }: HeaderProps) {
       ? "text-zinc-900 dark:text-zinc-100 font-medium"
       : "text-zinc-600 dark:text-zinc-400";
   };
+
+  if (pathname === "/gallery" && !overlayMode) return null;
 
   return (
     <>

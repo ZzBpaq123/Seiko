@@ -2,6 +2,7 @@ package com.seiko.blog.controller;
 
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.seiko.common.result.Result;
+import com.seiko.common.result.ResultCode;
 import com.seiko.blog.service.PostService;
 import com.seiko.blog.vo.PostVO;
 import com.seiko.blog.vo.TagCountVO;
@@ -31,7 +32,11 @@ public class PostController {
     @Operation(summary = "获取文章列表", description = "分页获取已发布的文章列表，按发布时间倒序")
     public Result<Page<PostVO>> getPostList(
             @Parameter(description = "当前页码，默认1") @RequestParam(defaultValue = "1") long page,
-            @Parameter(description = "每页大小，默认10") @RequestParam(defaultValue = "10") long size) {
+            @Parameter(description = "每页大小，默认10") @RequestParam(defaultValue = "10") long size,
+            @Parameter(description = "标签名") @RequestParam(required = false) String tag) {
+        if (tag != null) {
+            return Result.success(postService.getPostsByTag(tag, page, size));
+        }
         return Result.success(postService.getPostList(page, size, true, null, null));
     }
 
@@ -44,7 +49,7 @@ public class PostController {
             @Parameter(description = "文章slug") @PathVariable String slug) {
         PostVO post = postService.getPostBySlug(slug);
         if (post == null) {
-            return Result.error("文章不存在");
+            return Result.error(ResultCode.NOT_FOUND);
         }
         // 记录一次阅读，返回的阅读数 = 缓存基准值 + Redis 增量（缓存返回的是反序列化副本，修改不污染缓存）
         long readNum = postService.incrementReadCountAndGet(post.getId(), post.getReadNum() == null ? 0 : post.getReadNum());

@@ -3,7 +3,7 @@ package com.seiko.blog.controller;
 import com.seiko.common.result.Result;
 import com.seiko.blog.dto.CommentDTO;
 import com.seiko.blog.service.CommentService;
-import com.seiko.blog.vo.CommentVO;
+import com.seiko.blog.vo.PublicCommentVO;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -29,8 +29,8 @@ public class CommentController {
      */
     @GetMapping
     @Operation(summary = "获取评论列表", description = "获取所有评论列表，按评论日期倒序排列")
-    public Result<List<CommentVO>> getCommentList() {
-        return Result.success(commentService.getCommentList());
+    public Result<List<PublicCommentVO>> getCommentList() {
+        return Result.success(commentService.getCommentList().stream().map(PublicCommentVO::from).toList());
     }
 
     /**
@@ -38,9 +38,9 @@ public class CommentController {
      */
     @GetMapping("/{id}")
     @Operation(summary = "获取评论详情", description = "根据ID获取评论详情")
-    public Result<CommentVO> getCommentById(
+    public Result<PublicCommentVO> getCommentById(
             @Parameter(description = "评论ID") @PathVariable Long id) {
-        return Result.success(commentService.getCommentById(id));
+        return Result.success(PublicCommentVO.from(commentService.getCommentById(id)));
     }
 
     /**
@@ -48,9 +48,9 @@ public class CommentController {
      */
     @GetMapping("/post/{postId}")
     @Operation(summary = "根据文章获取评论", description = "根据文章ID获取评论列表")
-    public Result<List<CommentVO>> getCommentListByPostId(
+    public Result<List<PublicCommentVO>> getCommentListByPostId(
             @Parameter(description = "文章ID") @PathVariable Long postId) {
-        return Result.success(commentService.getCommentListByPostId(postId));
+        return Result.success(commentService.getCommentListByPostId(postId).stream().map(PublicCommentVO::from).toList());
     }
 
     /**
@@ -58,7 +58,7 @@ public class CommentController {
      */
     @PostMapping
     @Operation(summary = "创建评论", description = "创建新的评论记录，需携带邮箱验证码")
-    public Result<CommentVO> createComment(@Valid @RequestBody CommentDTO commentDTO) {
-        return Result.success("创建成功", commentService.createComment(commentDTO));
+    public Result<PublicCommentVO> createComment(@Valid @RequestBody CommentDTO commentDTO) {
+        return Result.success("创建成功", PublicCommentVO.from(commentService.createComment(commentDTO)));
     }
 }

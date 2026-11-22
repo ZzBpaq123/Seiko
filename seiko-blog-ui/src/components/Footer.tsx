@@ -10,6 +10,7 @@ import {
 
 export default function Footer() {
   const pathname = usePathname();
+  if (pathname === "/gallery") return null;
   const pageStyle = getPageStyle(
     pathname,
     pageFooterStyles,
@@ -64,9 +65,6 @@ export default function Footer() {
               冀ICP备2025113221号-1
             </a>
           </div>
-          <p className="text-xs text-zinc-400 dark:text-zinc-500">
-            版权所有 © 2025 Seiko
-          </p>
         </div>
       </div>
     </footer>

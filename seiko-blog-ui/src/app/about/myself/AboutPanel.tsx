@@ -3,7 +3,7 @@ import { EXPERIENCES } from "@/data/experiences";
 
 export default function AboutPanel() {
   return (
-    <section className="flex h-full w-screen shrink-0 flex-col items-center justify-center px-4 sm:px-6 lg:px-8">
+    <section className="flex min-h-full w-full flex-col items-center justify-center px-4 sm:px-6 lg:px-8">
       <div className="w-full max-w-5xl mx-auto">
         <div className="grid items-start gap-10 md:grid-cols-2">
           {/* 左侧 - 个人信息 */}

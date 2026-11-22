@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import Image from "next/image";
 import { Star, X } from "lucide-react";
 import type { MovieVO } from "@/api/types";
@@ -24,6 +24,7 @@ export default function MovieClient({ initialMovies }: MovieClientProps) {
   const [currentSlide, setCurrentSlide] = useState(0);
   const currentHero = heroMovies[currentSlide];
   const [selectedMovie, setSelectedMovie] = useState<MovieVO | null>(null);
+  const dialogRef = useRef<HTMLDialogElement>(null);
   const [isPaused, setIsPaused] = useState(false);
 
   // 轮播自动播放
@@ -44,31 +45,32 @@ export default function MovieClient({ initialMovies }: MovieClientProps) {
   };
 
   const closeDetail = () => {
+    dialogRef.current?.close();
     setSelectedMovie(null);
   };
 
-  // 详情弹窗打开时锁定背景滚动
   useEffect(() => {
-    if (selectedMovie) {
-      document.body.style.overflow = "hidden";
-    } else {
-      document.body.style.overflow = "";
-    }
+    const dialog = dialogRef.current;
+    if (!selectedMovie || !dialog) return;
+    const previousOverflow = document.body.style.overflow;
+    dialog.showModal();
+    document.body.style.overflow = "hidden";
     return () => {
-      document.body.style.overflow = "";
+      dialog.close();
+      document.body.style.overflow = previousOverflow;
     };
   }, [selectedMovie]);
 
   if (initialMovies.length === 0) {
     return (
-      <main className="-mt-14 -mb-16 min-h-screen flex items-center justify-center bg-movie-bg text-movie-muted">
+      <div className="-mt-14 -mb-16 min-h-screen flex items-center justify-center bg-movie-bg text-movie-muted">
         暂无影视数据
-      </main>
+      </div>
     );
   }
 
   return (
-    <main className="-mt-14 -mb-16 min-h-screen bg-movie-bg text-movie-text">
+    <div className="-mt-14 -mb-16 min-h-screen bg-movie-bg text-movie-text">
       {heroMovies.length > 0 && (
         <section
           className="relative w-full h-full min-h-150 md:min-h-190 overflow-hidden"
@@ -181,16 +183,20 @@ export default function MovieClient({ initialMovies }: MovieClientProps) {
         />
       )}
 
-      {/* 影视详情弹窗 */}
       {selectedMovie && (
-        <div
-          className="fixed inset-0 z-50 flex items-start justify-center p-4 pt-24 md:pt-32 bg-black/70 backdrop-blur-sm animate-content-fade-in"
-          onClick={closeDetail}
+        <dialog
+          ref={dialogRef}
+          aria-labelledby="movie-detail-title"
+          className="fixed inset-0 m-auto max-h-[calc(100dvh-2rem)] w-[calc(100%-2rem)] max-w-4xl overflow-hidden rounded-2xl bg-movie-surface-elevated text-movie-text shadow-2xl backdrop:bg-black/70 backdrop:backdrop-blur-sm"
+          onCancel={(event) => {
+            event.preventDefault();
+            closeDetail();
+          }}
+          onClick={(event) => {
+            if (event.target === event.currentTarget) closeDetail();
+          }}
         >
-          <div
-            className="relative w-full max-w-4xl max-h-[90vh] overflow-hidden rounded-2xl bg-movie-surface-elevated shadow-2xl flex flex-col md:flex-row"
-            onClick={(e) => e.stopPropagation()}
-          >
+          <div className="relative flex max-h-[calc(100dvh-2rem)] flex-col md:flex-row">
             <button
               onClick={closeDetail}
               className="absolute top-3 right-3 z-10 flex items-center justify-center w-8 h-8 rounded-full bg-black/50 text-white transition-all hover:bg-movie-accent hover:text-movie-bg"
@@ -200,7 +206,7 @@ export default function MovieClient({ initialMovies }: MovieClientProps) {
             </button>
 
             {/* 弹窗封面 */}
-            <div className="relative w-full md:w-2/5 h-56 md:h-auto md:min-h-100 shrink-0">
+            <div className="relative h-[clamp(5rem,30dvh,14rem)] w-full shrink-0 md:h-auto md:min-h-[min(25rem,70dvh)] md:w-2/5">
               <Image
                 src={selectedMovie.backdrop}
                 alt={selectedMovie.movieName}
@@ -214,7 +220,7 @@ export default function MovieClient({ initialMovies }: MovieClientProps) {
             {/* 弹窗信息 */}
             <div className="flex flex-col flex-1 min-h-0 p-5 md:p-8">
               <div className="shrink-0 mb-4">
-                <h3 className="text-2xl md:text-3xl font-bold text-movie-text mb-2">
+                <h3 id="movie-detail-title" className="text-2xl md:text-3xl font-bold text-movie-text mb-2">
                   {selectedMovie.movieName}
                 </h3>
                 <div className="flex flex-wrap items-center gap-2 text-sm text-movie-muted">
@@ -241,8 +247,8 @@ export default function MovieClient({ initialMovies }: MovieClientProps) {
               </div>
             </div>
           </div>
-        </div>
+        </dialog>
       )}
-    </main>
+    </div>
   );
 }

@@ -27,7 +27,7 @@ export default function GalleryEntrance({
   return (
     <div className="fixed inset-0 z-[60] overflow-hidden bg-slate-950">
       {/* 内容始终渲染在底层，星空在 warp 期间就开始初始化 */}
-      <div className="absolute inset-0">{children}</div>
+      <div className="absolute inset-0" inert={phase !== "done"}>{children}</div>
 
       {/* warp 覆盖层：完成后淡出，露出底层星空 */}
       {phase !== "done" && (

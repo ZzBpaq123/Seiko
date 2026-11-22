@@ -118,7 +118,6 @@ export interface NoticeDTO {
 
 export interface CommentVO {
   id: number;
-  userEmail: string;
   author: string;
   commentContent: string;
   commentDate: string;

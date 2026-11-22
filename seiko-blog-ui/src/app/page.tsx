@@ -9,6 +9,8 @@ import {
   MessageSquare,
 } from "lucide-react";
 import PostCard from "@/components/PostCard";
+import PostPagination from "@/components/PostPagination";
+import { loadPostPage } from "@/utils/postPagination";
 import { getPostList } from "@/api/post";
 import type { PostVO } from "@/api/types";
 import Typewriter from "@/components/Typewriter";
@@ -31,32 +33,18 @@ const SITE_START_DATE = "2026-01-01";
 export default async function Home({
   searchParams,
 }: {
-  searchParams: Promise<{ page?: string }>;
+  searchParams: Promise<{ page?: string | string[] }>;
 }) {
   const { page } = await searchParams;
-  const currentPage = Math.max(Number(page) || 1, 1);
-
-  // 并行获取推荐文章和当前页文章列表
-  const [recommendRes, listRes] = await Promise.all([
+  const [recommendRes, articlePage] = await Promise.all([
     getPostList({ page: 1, size: 3 }).catch(() => null),
-    getPostList({ page: currentPage, size: PAGE_SIZE }).catch(() => null),
+    loadPostPage(page, PAGE_SIZE, getPostList).catch(() => null),
   ]);
-
   const recommendPosts = recommendRes?.records ?? [];
-
-  const pageResult = listRes ?? {
-    records: [],
-    total: 0,
-    current: currentPage,
-    size: PAGE_SIZE,
-    pages: 0,
-  };
-
-  const pagePosts = pageResult.records;
-  const totalPages = Math.max(pageResult.pages, 1);
+  const pagePosts = articlePage?.result.records ?? [];
 
   return (
-    <main className="-mt-14 min-h-screen bg-zinc-50 dark:bg-black">
+    <div className="-mt-14 min-h-screen bg-zinc-50 dark:bg-black">
       {/* Hero Section - Full Screen Background */}
       <section
         className="relative flex h-[70vh] flex-col bg-cover bg-center bg-no-repeat"
@@ -144,7 +132,7 @@ export default async function Home({
       {/* Main Content - Two Column Layout */}
       <section
         id="posts"
-        className="relative overflow-hidden bg-white px-4 py-10"
+        className="relative overflow-hidden bg-white px-4 py-10 dark:bg-zinc-950"
       >
         {/* Decorative Hanging Elements - Macaron Colors */}
         <div className="pointer-events-none absolute inset-0 hidden lg:block">
@@ -222,7 +210,9 @@ export default async function Home({
 
               {/* Posts Section */}
               <div>
-                {pagePosts.length > 0 ? (
+                {!articlePage ? (
+                  <p role="alert" className="py-8 text-center text-zinc-600 dark:text-zinc-300">文章暂时无法加载，请稍后刷新重试。</p>
+                ) : pagePosts.length > 0 ? (
                   <div className="grid gap-6">
                     {pagePosts.map((post, i) => (
                       <PostCard key={post.slug} post={post} index={i} />
@@ -234,50 +224,7 @@ export default async function Home({
                   </p>
                 )}
 
-                {/* Pagination */}
-                {totalPages > 1 && (
-                  <div className="mt-10 flex items-center justify-center gap-2">
-                    <Link
-                      href={`/?page=${currentPage - 1}#posts`}
-                      aria-disabled={currentPage === 1}
-                      className={`inline-flex h-9 w-9 items-center justify-center rounded-lg border text-sm transition-colors ${
-                        currentPage === 1
-                          ? "pointer-events-none border-pink-100 text-pink-200 dark:border-pink-900/30 dark:text-pink-800"
-                          : "border-pink-200 text-pink-400 hover:bg-pink-50 hover:border-pink-300 hover:text-pink-500 dark:border-pink-900/50 dark:text-pink-400 dark:hover:bg-pink-950/30"
-                      }`}
-                    >
-                      ‹
-                    </Link>
-
-                    {Array.from({ length: totalPages }, (_, i) => i + 1).map(
-                      (p) => (
-                        <Link
-                          key={p}
-                          href={`/?page=${p}#posts`}
-                          className={`inline-flex h-9 w-9 items-center justify-center rounded-lg border text-sm transition-colors ${
-                            p === currentPage
-                              ? "border-rose-300 bg-rose-300 text-white shadow-sm shadow-pink-200 dark:shadow-pink-900/30"
-                              : "border-pink-200 text-pink-400 hover:bg-pink-50 hover:border-pink-300 hover:text-pink-500 dark:border-pink-900/50 dark:text-pink-400 dark:hover:bg-pink-950/30"
-                          }`}
-                        >
-                          {p}
-                        </Link>
-                      ),
-                    )}
-
-                    <Link
-                      href={`/?page=${currentPage + 1}#posts`}
-                      aria-disabled={currentPage === totalPages}
-                      className={`inline-flex h-9 w-9 items-center justify-center rounded-lg border text-sm transition-colors ${
-                        currentPage === totalPages
-                          ? "pointer-events-none border-pink-100 text-pink-200 dark:border-pink-900/30 dark:text-pink-800"
-                          : "border-pink-200 text-pink-400 hover:bg-pink-50 hover:border-pink-300 hover:text-pink-500 dark:border-pink-900/50 dark:text-pink-400 dark:hover:bg-pink-950/30"
-                      }`}
-                    >
-                      ›
-                    </Link>
-                  </div>
-                )}
+                {articlePage && <PostPagination page={articlePage.page} pages={articlePage.result.pages} hrefForPage={(page) => "/?page=" + page + "#posts"} />}
               </div>
             </div>
 
@@ -434,6 +381,6 @@ export default async function Home({
           </div>
         </div>
       </section>
-    </main>
+    </div>
   );
 }

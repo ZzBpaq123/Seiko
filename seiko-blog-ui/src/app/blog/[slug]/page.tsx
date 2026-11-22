@@ -4,7 +4,6 @@ import { Calendar, Flame, Bookmark, User } from "lucide-react";
 import { notFound } from "next/navigation";
 import MarkdownRenderer from "@/components/MarkdownRenderer";
 import TableOfContents from "@/components/TableOfContents";
-import AiSummary from "@/components/AiSummary";
 import ReadingFloatButtons from "@/components/ReadingFloatButtons";
 import CommentSection from "@/components/CommentSection";
 import { extractHeadings } from "@/utils/toc";
@@ -22,7 +21,8 @@ export async function generateMetadata({
   params,
 }: BlogPostPageProps): Promise<Metadata> {
   const { slug } = await params;
-  const post = await getPostBySlug(slug).catch(() => null);
+  const post = await getPostBySlug(slug).catch(() => undefined);
+  if (post === undefined) return { title: "Seiko Blog" };
 
   if (!post) {
     return {
@@ -38,7 +38,7 @@ export async function generateMetadata({
 
 export default async function BlogPostPage({ params }: BlogPostPageProps) {
   const { slug } = await params;
-  const post = await getPostBySlug(slug).catch(() => null);
+  const post = await getPostBySlug(slug);
 
   if (!post) {
     notFound();
@@ -48,7 +48,7 @@ export default async function BlogPostPage({ params }: BlogPostPageProps) {
 
   return (
     <>
-      <main className="-mt-14 min-h-screen bg-linear-to-b from-pink-50/50 to-white px-4 pt-20 dark:from-pink-950/60 dark:to-zinc-950">
+      <div className="-mt-14 min-h-screen bg-linear-to-b from-pink-50/50 to-white px-4 pt-20 dark:from-pink-950/60 dark:to-zinc-950">
         <div className="mx-auto max-w-7xl">
           <div className="flex justify-center gap-6 pt-8">
             {/* 桌面端左侧目录：与文章内容顶部对齐 */}
@@ -59,9 +59,17 @@ export default async function BlogPostPage({ params }: BlogPostPageProps) {
             </aside>
 
             {/* 内容区域：保持 max-w-5xl 不变 */}
-            <div className="w-full max-w-5xl">
-              {/* AI 总结 */}
-              <AiSummary />
+            <div className="w-full min-w-0 max-w-5xl">
+              {post.excerpt?.trim() && (
+                <details className="mb-6 rounded-lg border border-emerald-500 px-5 py-3.5 dark:border-emerald-600">
+                  <summary className="cursor-pointer text-sm font-semibold text-emerald-700 dark:text-emerald-300">
+                    文章摘要
+                  </summary>
+                  <p className="pt-3 text-sm leading-relaxed text-emerald-800 dark:text-emerald-200">
+                    {post.excerpt}
+                  </p>
+                </details>
+              )}
 
               {/* Article */}
               <article className="rounded-lg border border-zinc-200 bg-white p-8 dark:border-zinc-800 dark:bg-zinc-900">
@@ -109,7 +117,7 @@ export default async function BlogPostPage({ params }: BlogPostPageProps) {
             </div>
           </div>
         </div>
-      </main>
+      </div>
 
       <ReadingFloatButtons />
     </>
