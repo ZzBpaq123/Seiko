@@ -45,8 +45,14 @@ mysql -u root -p < seiko-work-service/src/main/resources/db/schema.sql
 
 | 变量 | 说明 | 默认值 |
 |------|------|--------|
+| `MYSQL_HOST` / `MYSQL_PORT` | MySQL 地址和端口 | `localhost` / `3306` |
+| `WORK_MYSQL_DATABASE` | 工作台数据库名 | `seiko_work` |
+| `MYSQL_USERNAME` | MySQL 用户名 | `root` |
 | `MYSQL_PASSWORD` | MySQL 密码 | 必填，无默认值 |
+| `REDIS_HOST` / `REDIS_PORT` | Redis 地址和端口 | `localhost` / `6379` |
+| `WORK_REDIS_DATABASE` | 工作台 Redis 库编号 | `2` |
 | `REDIS_PASSWORD` | Redis 密码 | 空（实例要求认证时必填） |
+| `WORK_SERVER_PORT` | 工作台后端端口 | `1001` |
 | `CRYPTO_KEY` | 敏感字段 AES-256-GCM 密钥，至少 32 字符，使用随机生成值 | 必填，无默认值 |
 | `MAIL_USERNAME` / `MAIL_PASSWORD` | 发件邮箱账号 / SMTP 授权码 | 空 |
 | `CORS_ALLOWED_ORIGINS` | 允许跨域来源 | `http://localhost:3002` |
@@ -54,13 +60,16 @@ mysql -u root -p < seiko-work-service/src/main/resources/db/schema.sql
 
 ### 3. 启动后端
 
+在仓库根目录执行以下命令：
+
 ```bash
 mvn -pl seiko-common -am install
-cd seiko-work-service
-mvn spring-boot:run "-Dspring-boot.run.profiles=dev"
+mvn -pl seiko-work-service spring-boot:run
 ```
 
-开发环境接口文档：http://localhost:1001/swagger-ui.html。默认不激活开发环境，非开发环境关闭 API 文档；生产环境需通过环境变量或部署配置提供数据源和 Redis 连接配置（例如 `SPRING_DATASOURCE_URL`、`SPRING_DATASOURCE_USERNAME`、`SPRING_DATASOURCE_PASSWORD` 和 `SPRING_DATA_REDIS_*`），不要使用 dev 配置。
+默认启用 `dev`，IDEA 中也可以直接运行 `SeikoWorkApplication`。开发环境接口文档位于 http://localhost:1001/swagger-ui.html。
+
+生产部署时显式设置 `SPRING_PROFILES_ACTIVE=prod`，并通过部署配置提供 `SPRING_DATASOURCE_URL`、`SPRING_DATASOURCE_USERNAME`、`SPRING_DATASOURCE_PASSWORD` 和 `SPRING_DATA_REDIS_*`。API 文档在非开发环境关闭。
 
 ### 4. 启动前端
 
@@ -130,10 +139,9 @@ mvn -pl seiko-manage-service spring-boot:run "-Dspring-boot.run.profiles=dev"
 ## 常用命令
 
 ```bash
-# 后端
-mvn test                                    # 运行测试
-mvn test -Dtest=CryptoUtilTest              # 运行单个测试
-mvn clean package -DskipTests               # 打包 -> target/seiko-work-service.jar
+# 工作台后端（从仓库根目录运行）
+mvn -pl seiko-work-service -am test
+mvn -pl seiko-work-service -am clean package  # 打包到 seiko-work-service/target/seiko-work-service.jar
 
 # 前端
 npm run dev / build / lint
@@ -177,11 +185,11 @@ npm run dev / build / lint
 
 已有数据库不能直接更换 CRYPTO_KEY，否则原授权码无法解密。若旧环境使用默认密钥或较短密钥，应先备份数据库并停止所有应用实例，然后使用离线工具迁移。工具不打印授权码和密钥，默认只验证并回滚；任意一条密文不匹配旧密钥都会导致整批回滚。
 
-通过安全方式设置环境变量 `OLD_CRYPTO_KEY`（旧环境实际密钥）、`CRYPTO_KEY`（新的至少 32 字符随机密钥）、`ROTATION_JDBC_URL`、`MYSQL_USERNAME`、`MYSQL_PASSWORD`。在后端目录运行，驱动路径替换为本机 Maven 缓存中的 mysql-connector-j JAR：
+通过安全方式设置环境变量 `OLD_CRYPTO_KEY`（旧环境实际密钥）、`CRYPTO_KEY`（新的至少 32 字符随机密钥）、`ROTATION_JDBC_URL`、`MYSQL_USERNAME`、`MYSQL_PASSWORD`。在后端目录运行，驱动路径替换为本机 Maven 缓存中 Work 后端实际使用的 mysql-connector-j JAR（当前为 `9.1.0`）：
 
 ```text
-java --class-path "<mysql-connector-j-8.0.33.jar 的完整路径>" tools/RotateMailKey.java
-java --class-path "<mysql-connector-j-8.0.33.jar 的完整路径>" tools/RotateMailKey.java --apply
+java --class-path "<mysql-connector-j JAR 的完整路径>" tools/RotateMailKey.java
+java --class-path "<mysql-connector-j JAR 的完整路径>" tools/RotateMailKey.java --apply
 ```
 
 确认迁移成功后，所有应用实例使用同一个新 CRYPTO_KEY 启动，再清理临时的 OLD_CRYPTO_KEY。工具仅处理现有 AES-GCM 密文，早期明文授权码应走单独的数据修复流程。本次代码修复不会自动修改实际数据库。

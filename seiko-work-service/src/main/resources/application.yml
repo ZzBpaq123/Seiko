@@ -10,11 +10,11 @@ spring:
       max-request-size: 10MB
 
   # Jackson 时区配置
-  Jackson:
+  jackson:
     time-zone: Asia/Shanghai
     date-format: yyyy-MM-dd HH:mm:ss
 
-  # mail 配置（用户名/授权码通过环境变量注入，或复制为被 .gitignore 忽略的 application-local.yml）
+  # 邮件用户名和授权码通过环境变量注入
   mail:
     host: smtp.qq.com
     port: 465
@@ -33,7 +33,7 @@ spring:
 
 # 服务器配置
 server:
-  port: 1001
+  port: ${WORK_SERVER_PORT:1001}
   servlet:
     context-path: /
 
