@@ -33,16 +33,14 @@ public interface BillMapper extends BaseMapper<Bill> {
      * @param endDate   结束日（不含）
      * @return 汇总结果（startDate / endDate 字段由 Service 层回填）
      */
-    @Select("""
-            SELECT
-                IFNULL(SUM(CASE WHEN type = 1 THEN amount ELSE 0 END), 0)         AS income,
-                IFNULL(SUM(CASE WHEN type = 0 THEN amount ELSE 0 END), 0)         AS expense,
-                IFNULL(SUM(CASE WHEN type = 1 THEN amount ELSE -amount END), 0)   AS balance,
-                COUNT(*)                                                          AS billCount
-            FROM work_bill
-            WHERE user_id = #{userId} AND is_deleted = 0
-              AND bill_date >= #{startDate} AND bill_date < #{endDate}
-            """)
+    @Select("SELECT " +
+            "IFNULL(SUM(CASE WHEN type = 1 THEN amount ELSE 0 END), 0) AS income, " +
+            "IFNULL(SUM(CASE WHEN type = 0 THEN amount ELSE 0 END), 0) AS expense, " +
+            "IFNULL(SUM(CASE WHEN type = 1 THEN amount ELSE -amount END), 0) AS balance, " +
+            "COUNT(*) AS billCount " +
+            "FROM work_bill " +
+            "WHERE user_id = #{userId} AND is_deleted = 0 " +
+            "AND bill_date >= #{startDate} AND bill_date < #{endDate}")
     BillSummaryVO summary(@Param("userId") Long userId,
                           @Param("startDate") LocalDate startDate,
                           @Param("endDate") LocalDate endDate);
@@ -62,35 +60,33 @@ public interface BillMapper extends BaseMapper<Bill> {
      * @param period    统计粒度：DAY / WEEK / MONTH / YEAR
      * @return 按分组升序排列的趋势数据
      */
-    @Select("""
-            SELECT
-                CASE #{period}
-                    WHEN 'DAY'   THEN DATE_FORMAT(bill_date, '%Y-%m-%d')
-                    WHEN 'WEEK'  THEN DATE_FORMAT(DATE_SUB(bill_date, INTERVAL WEEKDAY(bill_date) DAY), '%Y-%m-%d')
-                    WHEN 'MONTH' THEN DATE_FORMAT(bill_date, '%Y-%m')
-                    WHEN 'YEAR'  THEN DATE_FORMAT(bill_date, '%Y')
-                END AS periodLabel,
-                CASE #{period}
-                    WHEN 'DAY'   THEN bill_date
-                    WHEN 'WEEK'  THEN DATE_SUB(bill_date, INTERVAL WEEKDAY(bill_date) DAY)
-                    WHEN 'MONTH' THEN DATE(DATE_FORMAT(bill_date, '%Y-%m-01'))
-                    WHEN 'YEAR'  THEN DATE(DATE_FORMAT(bill_date, '%Y-01-01'))
-                END AS periodStart,
-                CASE #{period}
-                    WHEN 'DAY'   THEN bill_date
-                    WHEN 'WEEK'  THEN DATE_ADD(DATE_SUB(bill_date, INTERVAL WEEKDAY(bill_date) DAY), INTERVAL 6 DAY)
-                    WHEN 'MONTH' THEN LAST_DAY(bill_date)
-                    WHEN 'YEAR'  THEN DATE(DATE_FORMAT(bill_date, '%Y-12-31'))
-                END AS periodEnd,
-                IFNULL(SUM(CASE WHEN type = 0 THEN amount ELSE 0 END), 0) AS expense,
-                IFNULL(SUM(CASE WHEN type = 1 THEN amount ELSE 0 END), 0) AS income,
-                COUNT(*) AS billCount
-            FROM work_bill
-            WHERE user_id = #{userId} AND is_deleted = 0
-              AND bill_date >= #{startDate} AND bill_date < #{endDate}
-            GROUP BY periodLabel, periodStart, periodEnd
-            ORDER BY periodLabel
-            """)
+    @Select("SELECT " +
+            "CASE #{period} " +
+            "    WHEN 'DAY' THEN DATE_FORMAT(bill_date, '%Y-%m-%d') " +
+            "    WHEN 'WEEK' THEN DATE_FORMAT(DATE_SUB(bill_date, INTERVAL WEEKDAY(bill_date) DAY), '%Y-%m-%d') " +
+            "    WHEN 'MONTH' THEN DATE_FORMAT(bill_date, '%Y-%m') " +
+            "    WHEN 'YEAR' THEN DATE_FORMAT(bill_date, '%Y') " +
+            "END AS periodLabel, " +
+            "CASE #{period} " +
+            "    WHEN 'DAY' THEN bill_date " +
+            "    WHEN 'WEEK' THEN DATE_SUB(bill_date, INTERVAL WEEKDAY(bill_date) DAY) " +
+            "    WHEN 'MONTH' THEN DATE(DATE_FORMAT(bill_date, '%Y-%m-01')) " +
+            "    WHEN 'YEAR' THEN DATE(DATE_FORMAT(bill_date, '%Y-01-01')) " +
+            "END AS periodStart, " +
+            "CASE #{period} " +
+            "    WHEN 'DAY' THEN bill_date " +
+            "    WHEN 'WEEK' THEN DATE_ADD(DATE_SUB(bill_date, INTERVAL WEEKDAY(bill_date) DAY), INTERVAL 6 DAY) " +
+            "    WHEN 'MONTH' THEN LAST_DAY(bill_date) " +
+            "    WHEN 'YEAR' THEN DATE(DATE_FORMAT(bill_date, '%Y-12-31')) " +
+            "END AS periodEnd, " +
+            "IFNULL(SUM(CASE WHEN type = 0 THEN amount ELSE 0 END), 0) AS expense, " +
+            "IFNULL(SUM(CASE WHEN type = 1 THEN amount ELSE 0 END), 0) AS income, " +
+            "COUNT(*) AS billCount " +
+            "FROM work_bill " +
+            "WHERE user_id = #{userId} AND is_deleted = 0 " +
+            "AND bill_date >= #{startDate} AND bill_date < #{endDate} " +
+            "GROUP BY periodLabel, periodStart, periodEnd " +
+            "ORDER BY periodLabel")
     List<BillTrendVO> trend(@Param("userId") Long userId,
                             @Param("startDate") LocalDate startDate,
                             @Param("endDate") LocalDate endDate,
@@ -107,18 +103,16 @@ public interface BillMapper extends BaseMapper<Bill> {
      * @param endDate   结束日（不含）
      * @return 按支出降序排列的分类统计
      */
-    @Select("""
-            SELECT
-                IFNULL(category, '未分类') AS category,
-                IFNULL(SUM(CASE WHEN type = 0 THEN amount ELSE 0 END), 0) AS expense,
-                IFNULL(SUM(CASE WHEN type = 1 THEN amount ELSE 0 END), 0) AS income,
-                COUNT(*) AS billCount
-            FROM work_bill
-            WHERE user_id = #{userId} AND is_deleted = 0
-              AND bill_date >= #{startDate} AND bill_date < #{endDate}
-            GROUP BY IFNULL(category, '未分类')
-            ORDER BY expense DESC, income DESC
-            """)
+    @Select("SELECT " +
+            "IFNULL(category, '未分类') AS category, " +
+            "IFNULL(SUM(CASE WHEN type = 0 THEN amount ELSE 0 END), 0) AS expense, " +
+            "IFNULL(SUM(CASE WHEN type = 1 THEN amount ELSE 0 END), 0) AS income, " +
+            "COUNT(*) AS billCount " +
+            "FROM work_bill " +
+            "WHERE user_id = #{userId} AND is_deleted = 0 " +
+            "AND bill_date >= #{startDate} AND bill_date < #{endDate} " +
+            "GROUP BY IFNULL(category, '未分类') " +
+            "ORDER BY expense DESC, income DESC")
     List<BillCategoryStatVO> categoryStat(@Param("userId") Long userId,
                                           @Param("startDate") LocalDate startDate,
                                           @Param("endDate") LocalDate endDate);
