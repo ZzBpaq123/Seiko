@@ -154,7 +154,7 @@ export default function BookClient({ initialBooks: books }: BookClientProps) {
 
   if (books.length === 0) {
     return (
-      <div className="-mb-16 -mt-14 flex min-h-screen items-center justify-center bg-amber-50 px-4 dark:bg-amber-950">
+      <div className="-mt-14 flex min-h-screen items-center justify-center px-4">
         <div className="text-center">
           <BookOpen className="mx-auto mb-4 h-12 w-12 text-amber-300 dark:text-amber-700" />
           <p className="text-lg text-amber-800 dark:text-amber-200">暂无书籍</p>
@@ -164,7 +164,7 @@ export default function BookClient({ initialBooks: books }: BookClientProps) {
   }
 
   return (
-    <div className="-mb-16 -mt-14 flex h-screen overflow-hidden bg-amber-50 dark:bg-amber-950">
+    <div className="-mt-14 flex h-screen overflow-hidden">
       {/* 左侧：3D 莫比乌斯环 */}
       <section className="relative hidden h-full w-1/2 bg-amber-50 dark:bg-amber-950 lg:block">
         <MoebiusScene

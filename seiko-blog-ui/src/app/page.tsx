@@ -44,7 +44,7 @@ export default async function Home({
   const pagePosts = articlePage?.result.records ?? [];
 
   return (
-    <div className="-mt-14 min-h-screen bg-zinc-50 dark:bg-black">
+    <div className="-mt-14 min-h-screen">
       {/* Hero Section - Full Screen Background */}
       <section
         className="relative flex h-[70vh] flex-col bg-cover bg-center bg-no-repeat"
@@ -132,7 +132,7 @@ export default async function Home({
       {/* Main Content - Two Column Layout */}
       <section
         id="posts"
-        className="relative overflow-hidden bg-white px-4 py-10 dark:bg-zinc-950"
+        className="relative overflow-hidden px-4 py-10"
       >
         {/* Decorative Hanging Elements - Macaron Colors */}
         <div className="pointer-events-none absolute inset-0 hidden lg:block">

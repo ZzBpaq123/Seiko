@@ -63,14 +63,14 @@ export default function MovieClient({ initialMovies }: MovieClientProps) {
 
   if (initialMovies.length === 0) {
     return (
-      <div className="-mt-14 -mb-16 min-h-screen flex items-center justify-center bg-movie-bg text-movie-muted">
+      <div className="-mt-14 min-h-screen flex items-center justify-center text-movie-muted">
         暂无影视数据
       </div>
     );
   }
 
   return (
-    <div className="-mt-14 -mb-16 min-h-screen bg-movie-bg text-movie-text">
+    <div className="-mt-14 min-h-screen text-movie-text">
       {heroMovies.length > 0 && (
         <section
           className="relative w-full h-full min-h-150 md:min-h-190 overflow-hidden"

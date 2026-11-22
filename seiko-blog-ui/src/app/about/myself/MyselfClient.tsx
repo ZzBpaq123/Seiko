@@ -82,7 +82,7 @@ export default function MyselfClient() {
   return (
     <div
       ref={containerRef}
-      className="relative h-[calc(100dvh-12.8vh)] w-full overflow-hidden -mt-14 -mb-16 bg-[#f8f7f5]"
+      className="relative h-[calc(100dvh-12.8vh)] w-full overflow-hidden -mt-14"
     >
       {/* 顶部光线效果层 */}
       <div className="absolute inset-0 z-20 pointer-events-none bg-linear-to-b from-blue-500/5 via-transparent to-transparent" />

@@ -254,13 +254,16 @@ export default function FootprintClient({ footprints }: { footprints: FootprintV
   const showList = !showMap || mapState === "loading";
 
   return (
-    <div className="relative -mb-16 -mt-14 min-h-screen bg-zinc-50 dark:bg-black">
+    <div className="relative -mt-14 min-h-screen">
       {showMap && (
         <div
           ref={mapRef}
           className={mapState === "loading" ? "invisible absolute inset-0 h-screen w-full" : "h-screen w-full"}
           aria-label="足迹地图"
         />
+      )}
+      {!showList && (
+        <div aria-hidden className="pointer-events-none absolute inset-x-0 bottom-0 h-10 bg-linear-to-b from-transparent to-(--page-background) to-90%" />
       )}
       {showList && (
         <section className="mx-auto max-w-3xl px-4 pb-16 pt-24">

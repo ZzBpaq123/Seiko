@@ -16,7 +16,7 @@ export default async function BlogListing({ page, tag }: { page?: string | strin
   const listingPath = tag ? "/tag/" + encodeURIComponent(tag) : "/blog";
 
   return (
-    <div className="-mt-14 min-h-screen bg-white dark:bg-zinc-950">
+    <div className="-mt-14 min-h-screen">
       {/* Hero Section */}
       <section
         className="relative flex h-[80vh] flex-col bg-cover bg-center bg-no-repeat"
@@ -85,7 +85,7 @@ export default async function BlogListing({ page, tag }: { page?: string | strin
       </section>
 
       {/* Main Content - Two Column Layout */}
-      <section className="relative overflow-hidden bg-white px-4 py-10 dark:bg-zinc-950">
+      <section className="relative overflow-hidden px-4 py-10">
         <div className="relative mx-auto max-w-6xl">
           <div className="grid gap-8 lg:grid-cols-[1fr_280px]">
             {/* Left Column - Posts List */}

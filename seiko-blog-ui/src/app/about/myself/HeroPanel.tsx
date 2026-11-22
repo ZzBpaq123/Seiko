@@ -7,7 +7,7 @@ const CAROUSEL_KEYFRAMES =
 
 export default function HeroPanel() {
   return (
-    <section className="relative flex min-h-full w-full flex-col bg-[#f8f7f5]">
+    <section className="relative flex min-h-full w-full flex-col">
       <div className="relative z-10 flex flex-1 items-center justify-center px-4 sm:px-6 lg:px-8">
         <div className="flex flex-col items-center justify-between w-full max-w-5xl gap-5 py-4 sm:gap-10 mx-auto md:flex-row">
           {/* 左侧文本 */}

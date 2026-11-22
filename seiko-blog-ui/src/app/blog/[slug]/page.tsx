@@ -48,7 +48,7 @@ export default async function BlogPostPage({ params }: BlogPostPageProps) {
 
   return (
     <>
-      <div className="-mt-14 min-h-screen bg-linear-to-b from-pink-50/50 to-white px-4 pt-20 dark:from-pink-950/60 dark:to-zinc-950">
+      <div className="-mt-14 min-h-screen bg-linear-to-b from-pink-50/50 to-(--page-background) px-4 pt-20 dark:from-pink-950/60">
         <div className="mx-auto max-w-7xl">
           <div className="flex justify-center gap-6 pt-8">
             {/* 桌面端左侧目录：与文章内容顶部对齐 */}

@@ -66,7 +66,7 @@ function ResourceGroup({
   return (
     <section
       key={group.category}
-      className="py-12 md:py-16 bg-[#f8f7f5]"
+      className="py-12 md:py-16"
     >
       <div className="mx-auto max-w-6xl px-4 sm:px-6 lg:px-8">
         <button
@@ -127,7 +127,7 @@ export default function ResourceClient({ initialGroups }: ResourceClientProps) {
 
   if (initialGroups.length === 0) {
     return (
-      <div className="-mt-14 -mb-16 flex min-h-screen items-center justify-center bg-[#f8f7f5] px-4 pb-16">
+      <div className="-mt-14 flex min-h-screen items-center justify-center px-4 pb-16">
         <div className="text-center">
           <Globe className="mx-auto mb-4 h-12 w-12 text-emerald-600/50" />
           <p className="text-lg text-stone-500">暂无资源</p>
@@ -137,7 +137,7 @@ export default function ResourceClient({ initialGroups }: ResourceClientProps) {
   }
 
   return (
-    <div className="-mt-14 -mb-16 min-h-screen bg-[#f8f7f5] pb-16 pt-20">
+    <div className="-mt-14 min-h-screen pb-16 pt-20">
       {initialGroups.map((group) => (
         <ResourceGroup
           key={group.category}

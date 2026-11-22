@@ -4,7 +4,7 @@ import { ArrowLeft } from "lucide-react";
 
 export default function NotFound() {
   return (
-    <div className="flex min-h-screen flex-col items-center justify-center bg-white px-4 dark:bg-black">
+    <div className="flex min-h-screen flex-col items-center justify-center px-4">
       <div className="flex w-full max-w-md flex-col items-center text-center">
         {/* 404 插画 */}
         <Image

@@ -10,7 +10,7 @@ interface GameClientProps {
 
 export default function GameClient({ initialGames }: GameClientProps) {
   return (
-    <div className="min-h-screen bg-game-bg -mt-14 -mb-16 pb-16">
+    <div className="min-h-screen -mt-14 pb-16">
       {initialGames.map((game, index) => (
         <section
           key={game.id}
