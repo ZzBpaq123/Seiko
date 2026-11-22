@@ -1,4 +1,4 @@
-package com.seiko.work.exception;
+package com.seiko.work.common;
 
 import cn.dev33.satoken.exception.NotLoginException;
 import cn.dev33.satoken.exception.NotPermissionException;
