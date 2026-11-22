@@ -2,9 +2,12 @@ package com.seiko.manage;
 
 import cn.dev33.satoken.exception.NotRoleException;
 import cn.dev33.satoken.stp.StpUtil;
+import com.seiko.manage.controller.PostManageController;
 import com.seiko.manage.mapper.*;
 import org.junit.jupiter.api.Test;
 import org.mockito.MockedStatic;
+import org.springframework.aop.aspectj.AbstractAspectJAdvice;
+import org.springframework.aop.framework.Advised;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -72,7 +75,10 @@ class ManageServiceBoundaryTest {
                 "/api/manage/user/register", "/api/manage/user/info",
                 "/api/manage/user/forgot-password/reset", "/api/manage/upload/image");
         assertThat(context.containsBean("postReadCountFlushTask")).isFalse();
-        assertThat(context.containsBean("operationLogAspect")).isTrue();
+        assertThat(context.getBean(PostManageController.class)).isInstanceOfSatisfying(Advised.class, controller ->
+                assertThat(controller.getAdvisors()).anyMatch(advisor ->
+                        advisor.getAdvice() instanceof AbstractAspectJAdvice advice
+                                && advice.getAspectName().equals("operationLogAspect")));
         assertThat(context.containsBean("saServletFilter")).isTrue();
     }
 

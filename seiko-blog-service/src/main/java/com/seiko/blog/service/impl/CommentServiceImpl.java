@@ -1,7 +1,6 @@
 package com.seiko.blog.service.impl;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
-import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.seiko.common.constant.RedisConstant;
 import com.seiko.common.exception.BusinessException;
 import com.seiko.common.result.ResultCode;
@@ -13,7 +12,6 @@ import com.seiko.blog.service.VerificationCodeService;
 import com.seiko.blog.vo.CommentVO;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.BeanUtils;
 import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
@@ -43,28 +41,6 @@ public class CommentServiceImpl implements CommentService {
     }
 
     @Override
-    public Page<CommentVO> getCommentPage(long page, long size, String author) {
-        Page<Comment> commentPage = new Page<>(page, size);
-        LambdaQueryWrapper<Comment> wrapper = new LambdaQueryWrapper<Comment>();
-        if (author != null && !author.isBlank()) {
-            wrapper.like(Comment::getAuthor, author.trim());
-        }
-        wrapper.orderByDesc(Comment::getId);
-
-        Page<Comment> result = commentMapper.selectPage(commentPage, wrapper);
-
-        List<CommentVO> voList = result.getRecords().stream()
-                .map(this::convertToVO)
-                .collect(Collectors.toList());
-
-        Page<CommentVO> voPage = new Page<>();
-        BeanUtils.copyProperties(result, voPage);
-        voPage.setRecords(voList);
-
-        return voPage;
-    }
-
-    @Override
     @Cacheable(cacheNames = RedisConstant.CACHE_COMMENT, key = "'id:' + #id", unless = "#result == null")
     public CommentVO getCommentById(Long id) {
         Comment comment = commentMapper.selectById(id);
@@ -89,19 +65,6 @@ public class CommentServiceImpl implements CommentService {
         log.info("创建评论: {}", comment.getCommentContent());
 
         return convertToVO(comment);
-    }
-
-    @Override
-    @Transactional(rollbackFor = Exception.class)
-    @CacheEvict(cacheNames = RedisConstant.CACHE_COMMENT, allEntries = true)
-    public void deleteComment(Long id) {
-        Comment comment = commentMapper.selectById(id);
-        if (comment == null || comment.getIsDeleted() == 1) {
-            throw new BusinessException(500, "评论不存在");
-        }
-
-        commentMapper.deleteById(id);
-        log.info("删除评论: {}", comment.getCommentContent());
     }
 
     @Override

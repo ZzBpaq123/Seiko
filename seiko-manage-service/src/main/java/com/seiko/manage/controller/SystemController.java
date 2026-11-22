@@ -1,4 +1,4 @@
-package com.seiko.manage.controller.manage;
+package com.seiko.manage.controller;
 
 import com.seiko.common.annotation.OperationLog;
 import com.seiko.common.result.Result;

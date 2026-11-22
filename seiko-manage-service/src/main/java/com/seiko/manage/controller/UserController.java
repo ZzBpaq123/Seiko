@@ -1,4 +1,4 @@
-package com.seiko.manage.controller.manage;
+package com.seiko.manage.controller;
 
 import cn.dev33.satoken.stp.StpUtil;
 import com.seiko.common.annotation.OperationLog;

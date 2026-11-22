@@ -1,10 +1,8 @@
 package com.seiko.blog.service;
 
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
-import com.seiko.blog.dto.PostDTO;
 import com.seiko.blog.vo.PostVO;
 import com.seiko.blog.vo.TagCountVO;
-import com.seiko.blog.vo.TagVO;
 
 import java.util.List;
 
@@ -12,31 +10,6 @@ import java.util.List;
  * 文章服务接口
  */
 public interface PostService {
-
-    /**
-     * 创建文章
-     *
-     * @param dto 文章创建请求
-     * @return 新文章ID
-     */
-    Long createPost(PostDTO dto);
-
-    /**
-     * 更新文章
-     *
-     * @param id  文章ID
-     * @param dto 文章更新请求
-     * @return 是否更新成功
-     */
-    Boolean updatePost(Long id, PostDTO dto);
-
-    /**
-     * 删除文章
-     *
-     * @param id 文章ID
-     * @return 是否删除成功
-     */
-    Boolean deletePost(Long id);
 
     /**
      * 分页获取文章列表
@@ -49,14 +22,6 @@ public interface PostService {
      * @return 文章分页列表
      */
     Page<PostVO> getPostList(long page, long size, Boolean published, String title, String tag);
-
-    /**
-     * 根据ID获取文章详情
-     *
-     * @param id 文章ID
-     * @return 文章详情
-     */
-    PostVO getPostById(Long id);
 
     /**
      * 根据slug获取文章详情
@@ -82,13 +47,6 @@ public interface PostService {
      * @return 标签列表
      */
     List<String> getAllTags();
-
-    /**
-     * 获取标签列表（含ID）
-     *
-     * @return 标签VO列表
-     */
-    List<TagVO> getTagList();
 
     /**
      * 获取标签统计

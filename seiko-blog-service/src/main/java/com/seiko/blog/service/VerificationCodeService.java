@@ -21,9 +21,4 @@ public interface VerificationCodeService {
      * @return 校验是否通过
      */
     boolean verify(String email, String code);
-
-    /**
-     * 构建 Redis Key
-     */
-    String buildRedisKey(String email);
 }

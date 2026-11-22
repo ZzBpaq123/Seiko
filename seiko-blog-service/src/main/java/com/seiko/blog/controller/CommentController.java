@@ -1,4 +1,4 @@
-package com.seiko.blog.controller.blog;
+package com.seiko.blog.controller;
 
 import com.seiko.common.result.Result;
 import com.seiko.blog.dto.CommentDTO;

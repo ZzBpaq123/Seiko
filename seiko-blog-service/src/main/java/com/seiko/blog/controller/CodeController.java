@@ -1,4 +1,4 @@
-package com.seiko.blog.controller.base;
+package com.seiko.blog.controller;
 
 import com.seiko.common.result.Result;
 import com.seiko.blog.component.EmailRateLimiter;

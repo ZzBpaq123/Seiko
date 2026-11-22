@@ -1,4 +1,4 @@
-package com.seiko.manage.controller.manage;
+package com.seiko.manage.controller;
 
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.seiko.manage.service.CommentService;

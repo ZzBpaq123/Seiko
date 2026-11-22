@@ -1,6 +1,5 @@
 package com.seiko.blog.service;
 
-import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.seiko.blog.dto.CommentDTO;
 import com.seiko.blog.vo.CommentVO;
 
@@ -19,16 +18,6 @@ public interface CommentService {
     List<CommentVO> getCommentList();
 
     /**
-     * 获取评论分页列表
-     *
-     * @param page   页码
-     * @param size   每页大小
-     * @param author 评论作者模糊查询
-     * @return 评论分页列表
-     */
-    Page<CommentVO> getCommentPage(long page, long size, String author);
-
-    /**
      * 获取评论详情
      *
      * @param id 评论ID
@@ -43,13 +32,6 @@ public interface CommentService {
      * @return 创建的评论
      */
     CommentVO createComment(CommentDTO commentDTO);
-
-    /**
-     * 删除评论
-     *
-     * @param id 评论ID
-     */
-    void deleteComment(Long id);
 
     /**
      * 根据文章ID获取评论列表

@@ -1,4 +1,4 @@
-package com.seiko.blog.controller.blog;
+package com.seiko.blog.controller;
 
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.seiko.common.result.Result;

@@ -33,9 +33,8 @@ import java.util.Set;
 /**
  * 操作日志切面
  *
- * <p>仅拦截 {@code com.seiko.manage.controller.manage} 包下标注了 {@link OperationLog} 的方法，
- * 收集请求入参、返回参数、错误信息、操作状态与耗时，并异步入库。
- * 公开接口包 {@code controller.blog} 下的方法不记录日志。</p>
+ * <p>拦截 {@code com.seiko.manage.controller} 包下标注了 {@link OperationLog} 的方法，
+ * 收集请求入参、返回参数、错误信息、操作状态与耗时，并异步入库。</p>
  */
 @Slf4j
 @Aspect
@@ -48,10 +47,10 @@ public class OperationLogAspect {
     private final ObjectMapper objectMapper;
 
     /**
-     * 切点：后台 manage 包下所有标注了 @OperationLog 的 public 方法
+     * 匹配管理端 Controller 中标注了 {@link OperationLog} 的方法
      */
     @Around("@annotation(com.seiko.common.annotation.OperationLog)"
-            + " && within(com.seiko.manage.controller.manage..*)")
+            + " && within(com.seiko.manage.controller.*)")
     public Object around(ProceedingJoinPoint joinPoint) throws Throwable {
         long startTime = System.currentTimeMillis();
         Object result = null;

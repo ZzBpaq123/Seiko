@@ -4,9 +4,6 @@ import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.seiko.common.constant.RedisConstant;
-import com.seiko.common.exception.BusinessException;
-import com.seiko.common.result.ResultCode;
-import com.seiko.blog.dto.PostDTO;
 import com.seiko.blog.entity.Post;
 import com.seiko.blog.entity.PostTag;
 import com.seiko.blog.entity.Tag;
@@ -16,17 +13,12 @@ import com.seiko.blog.mapper.TagMapper;
 import com.seiko.blog.service.PostService;
 import com.seiko.blog.vo.PostVO;
 import com.seiko.blog.vo.TagCountVO;
-import com.seiko.blog.vo.TagVO;
 import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.BeanUtils;
-import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.cache.annotation.Cacheable;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
 
-import java.util.Date;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -34,7 +26,6 @@ import java.util.stream.Collectors;
 /**
  * 文章服务实现
  */
-@Slf4j
 @Service
 @RequiredArgsConstructor
 public class PostServiceImpl extends ServiceImpl<PostMapper, Post> implements PostService {
@@ -47,136 +38,6 @@ public class PostServiceImpl extends ServiceImpl<PostMapper, Post> implements Po
     private final PostTagMapper postTagMapper;
 
     private final StringRedisTemplate redisTemplate;
-
-    @Override
-    @Transactional(rollbackFor = Exception.class)
-    @CacheEvict(cacheNames = RedisConstant.CACHE_POST, allEntries = true)
-    public Long createPost(PostDTO dto) {
-        // 构建文章实体
-        Post post = new Post();
-        post.setTitle(dto.getTitle().trim());
-        post.setExcerpt(dto.getExcerpt());
-        post.setContent(dto.getContent());
-        post.setCover(dto.getCover());
-        post.setAuthor(dto.getAuthor());
-        post.setReadNum(0);
-        post.setSlug(dto.getSlug());
-
-        // 发布状态，默认草稿；发布时记录发布时间
-        boolean published = Boolean.TRUE.equals(dto.getPublished());
-        post.setPublished(published);
-        if (published) {
-            post.setPublishTime(new Date());
-        }
-
-        // 保存文章，回填自增ID
-        this.save(post);
-
-        // 处理标签：查找已有或新建，再建立文章-标签关联
-        if (dto.getTags() != null && !dto.getTags().isEmpty()) {
-            bindTags(post.getId(), dto.getTags());
-        }
-
-        return post.getId();
-    }
-
-    @Override
-    @Transactional(rollbackFor = Exception.class)
-    @CacheEvict(cacheNames = RedisConstant.CACHE_POST, allEntries = true)
-    public Boolean deletePost(Long id) {
-        Post post = this.getById(id);
-        if (post == null) {
-            throw new BusinessException(ResultCode.NOT_FOUND);
-        }
-
-        // 移除文章-标签关联
-        postTagMapper.delete(new LambdaQueryWrapper<PostTag>().eq(PostTag::getPostId, id));
-
-        // 逻辑删除文章
-        return this.removeById(id);
-    }
-
-    @Override
-    @Transactional(rollbackFor = Exception.class)
-    @CacheEvict(cacheNames = RedisConstant.CACHE_POST, allEntries = true)
-    public Boolean updatePost(Long id, PostDTO dto) {
-        Post post = this.getById(id);
-        if (post == null) {
-            throw new BusinessException(ResultCode.NOT_FOUND);
-        }
-
-        post.setTitle(dto.getTitle().trim());
-        post.setExcerpt(dto.getExcerpt());
-        post.setContent(dto.getContent());
-        post.setCover(dto.getCover());
-        post.setAuthor(dto.getAuthor());
-        if (dto.getSlug() != null && !dto.getSlug().isBlank()) {
-            post.setSlug(dto.getSlug().trim());
-        }
-
-        // 发布状态变更时处理发布时间
-        boolean published = Boolean.TRUE.equals(dto.getPublished());
-        if (published && !Boolean.TRUE.equals(post.getPublished())) {
-            post.setPublishTime(new Date());
-        }
-        post.setPublished(published);
-
-        boolean success = this.updateById(post);
-
-        // 重新绑定标签
-        postTagMapper.delete(new LambdaQueryWrapper<PostTag>().eq(PostTag::getPostId, id));
-        if (dto.getTags() != null && !dto.getTags().isEmpty()) {
-            bindTags(id, dto.getTags());
-        }
-
-        return success;
-    }
-
-    /**
-     * 为文章绑定标签，标签不存在时自动创建
-     */
-    private void bindTags(Long postId, List<String> tagNames) {
-        tagNames.stream()
-                .filter(name -> name != null && !name.isBlank())
-                .map(String::trim)
-                .distinct()
-                .forEach(name -> {
-                    Long tagId = getOrCreateTag(name);
-                    PostTag postTag = new PostTag();
-                    postTag.setPostId(postId);
-                    postTag.setTagId(tagId);
-                    postTagMapper.insert(postTag);
-                });
-    }
-
-    /**
-     * 根据标签名查找标签ID，不存在则创建
-     */
-    private Long getOrCreateTag(String name) {
-        Tag tag = tagMapper.selectOne(
-                new LambdaQueryWrapper<Tag>().eq(Tag::getName, name).last("LIMIT 1"));
-        if (tag != null) {
-            return tag.getId();
-        }
-        Tag newTag = new Tag();
-        newTag.setName(name);
-        newTag.setSlug(generateSlug(name, "tag"));
-        tagMapper.insert(newTag);
-        return newTag.getId();
-    }
-
-    /**
-     * 将文本转为 URL 友好的 slug，无可用字符时回退为「前缀-时间戳」
-     */
-    private String generateSlug(String text, String fallbackPrefix) {
-        String slug = text.toLowerCase()
-                .replaceAll("[^a-z0-9]+", "-")
-                .replaceAll("^-+|-+$", "");
-        if (slug.isBlank()) {
-            slug = fallbackPrefix + "-" + System.currentTimeMillis();
-        }
-        return slug;
-    }
 
     @Override
     @Cacheable(cacheNames = RedisConstant.CACHE_POST,
@@ -244,15 +105,6 @@ public class PostServiceImpl extends ServiceImpl<PostMapper, Post> implements Po
     }
 
     @Override
-    public PostVO getPostById(Long id) {
-        Post post = this.getById(id);
-        if (post == null) {
-            throw new BusinessException(ResultCode.NOT_FOUND);
-        }
-        return convertToVO(post);
-    }
-
-    @Override
     @Cacheable(cacheNames = RedisConstant.CACHE_POST, key = "'slug:' + #slug", unless = "#result == null")
     public PostVO getPostBySlug(String slug) {
         LambdaQueryWrapper<Post> wrapper = new LambdaQueryWrapper<>();
@@ -289,18 +141,6 @@ public class PostServiceImpl extends ServiceImpl<PostMapper, Post> implements Po
                 .stream()
                 .map(tag -> tag.getName())
                 .distinct()
-                .collect(Collectors.toList());
-    }
-
-    @Override
-    public List<TagVO> getTagList() {
-        return tagMapper.selectList(null)
-                .stream()
-                .map(tag -> {
-                    TagVO vo = new TagVO();
-                    BeanUtils.copyProperties(tag, vo);
-                    return vo;
-                })
                 .collect(Collectors.toList());
     }
 

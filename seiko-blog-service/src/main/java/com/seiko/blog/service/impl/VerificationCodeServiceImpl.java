@@ -58,8 +58,7 @@ public class VerificationCodeServiceImpl implements VerificationCodeService {
         return true;
     }
 
-    @Override
-    public String buildRedisKey(String email) {
+    private String buildRedisKey(String email) {
         return EMAIL_CODE_PREFIX + normalizeEmail(email);
     }
 
