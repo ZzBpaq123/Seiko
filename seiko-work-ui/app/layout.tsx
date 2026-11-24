@@ -17,6 +17,7 @@ const geistMono = Geist_Mono({
 export const metadata: Metadata = {
   title: "Seiko Work",
   description: "Seiko Work UI",
+  icons: { icon: { url: "/seiko-mobius.svg", type: "image/svg+xml", sizes: "any" } },
 };
 
 export default function RootLayout({
