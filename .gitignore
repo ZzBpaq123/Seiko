@@ -42,6 +42,11 @@ desktop.ini
 .env
 .env.local
 .env.*.local
+/seiko-blog-service/src/main/resources/application-local.yml
+/seiko-blog-service/src/main/resources/application-local.yaml
+/seiko-manage-service/src/main/resources/application-local.yml
+/seiko-manage-service/src/main/resources/application-local.yaml
+uploads/
 
 # ==================== UI ====================
 /seiko-work-ui/node_modules/

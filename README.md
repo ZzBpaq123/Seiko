@@ -1,6 +1,6 @@
 # Seiko
 
-面向个人的工作站：接收邮件、安排每日工作与日程、记录每日收支。
+面向个人的工作站与博客：接收邮件、安排工作与日程、记录收支，以及发布和管理博客内容。
 
 ## 技术栈
 
@@ -15,10 +15,15 @@
 ## 项目结构
 
 ```
-seiko-work-service/   # 后端（Maven，端口 1001）
-seiko-work-ui/        # 前端（Next.js，开发端口 3000）
-seiko-blog-ui/        # 博客公开前台（Next.js 16，建议开发端口 3001）
-seiko-manage-ui/      # 博客管理前台（Next.js 16，默认端口 3002）
+pom.xml              # Maven 聚合入口
+seiko-common/        # 博客后端公共模块
+seiko-blog-service/   # 博客公开后端（Maven，端口 1002）
+seiko-manage-service/ # 博客管理后端（Maven，端口 1003）
+seiko-work-service/   # 工作台后端（Maven，端口 1001）
+seiko-work-ui/        # 前端（Next.js，默认端口 3002）
+seiko-blog-ui/        # 博客公开前台（Next.js 16，默认端口 3001）
+seiko-manage-ui/      # 博客管理前台（Next.js 16，默认端口 3003）
+sql/                  # 数据库导出文件
 doc/                  # 项目文档
 ```
 
@@ -40,21 +45,31 @@ mysql -u root -p < seiko-work-service/src/main/resources/db/schema.sql
 
 | 变量 | 说明 | 默认值 |
 |------|------|--------|
+| `MYSQL_HOST` / `MYSQL_PORT` | MySQL 地址和端口 | `localhost` / `3306` |
+| `WORK_MYSQL_DATABASE` | 工作台数据库名 | `seiko_work` |
+| `MYSQL_USERNAME` | MySQL 用户名 | `root` |
 | `MYSQL_PASSWORD` | MySQL 密码 | 必填，无默认值 |
+| `REDIS_HOST` / `REDIS_PORT` | Redis 地址和端口 | `localhost` / `6379` |
+| `WORK_REDIS_DATABASE` | 工作台 Redis 库编号 | `2` |
 | `REDIS_PASSWORD` | Redis 密码 | 空（实例要求认证时必填） |
+| `WORK_SERVER_PORT` | 工作台后端端口 | `1001` |
 | `CRYPTO_KEY` | 敏感字段 AES-256-GCM 密钥，至少 32 字符，使用随机生成值 | 必填，无默认值 |
 | `MAIL_USERNAME` / `MAIL_PASSWORD` | 发件邮箱账号 / SMTP 授权码 | 空 |
-| `CORS_ALLOWED_ORIGINS` | 允许跨域来源 | `http://localhost:3000` |
+| `CORS_ALLOWED_ORIGINS` | 允许跨域来源 | `http://localhost:3002` |
 | `NEXT_PUBLIC_API_BASE_URL` | 前端请求的后端地址 | `http://localhost:1001` |
 
 ### 3. 启动后端
 
+在仓库根目录执行以下命令：
+
 ```bash
-cd seiko-work-service
-mvn spring-boot:run "-Dspring-boot.run.profiles=dev"
+mvn -pl seiko-common -am install
+mvn -pl seiko-work-service spring-boot:run
 ```
 
-开发环境接口文档：http://localhost:1001/swagger-ui.html。默认不激活开发环境，非开发环境关闭 API 文档；生产环境需通过环境变量或部署配置提供数据源和 Redis 连接配置（例如 `SPRING_DATASOURCE_URL`、`SPRING_DATASOURCE_USERNAME`、`SPRING_DATASOURCE_PASSWORD` 和 `SPRING_DATA_REDIS_*`），不要使用 dev 配置。
+默认启用 `dev`，IDEA 中也可以直接运行 `SeikoWorkApplication`。开发环境接口文档位于 http://localhost:1001/swagger-ui.html。
+
+生产部署时显式设置 `SPRING_PROFILES_ACTIVE=prod`，并通过部署配置提供 `SPRING_DATASOURCE_URL`、`SPRING_DATASOURCE_USERNAME`、`SPRING_DATASOURCE_PASSWORD` 和 `SPRING_DATA_REDIS_*`。API 文档在非开发环境关闭。
 
 ### 4. 启动前端
 
@@ -64,7 +79,7 @@ npm install
 npm run dev
 ```
 
-访问 http://localhost:3000
+访问 http://localhost:3002。三个前端的开发和生产启动脚本分别固定使用：博客前台 3001、工作台 3002、管理前台 3003，可同时运行。
 
 ### 5. 启动博客前台（可选）
 
@@ -75,12 +90,12 @@ cd seiko-blog-ui
 npm ci
 Copy-Item .env.example .env.local
 # 按实际博客后端地址修改 .env.local
-npm run dev -- --port 3001
+npm run dev
 ```
 
-访问 http://localhost:3001。生产构建使用 `npm run build`，启动使用 `npm start -- --port 3001`。
+访问 http://localhost:3001。生产构建使用 `npm run build`，启动使用 `npm start`（端口 3001）。
 
-博客前台的 `NEXT_PUBLIC_API_BASE_URL` 必须包含 `/api/blog`，默认是 `http://localhost:1001/api/blog`。当前 `seiko-work-service` 不提供博客接口；展示文章、相册、评论等动态数据仍需单独运行原博客后端，并允许博客前台来源的跨域请求。若两个后端同时运行，需配置不同端口，并相应调整博客 API 地址。未连接博客后端时，部分页面降级显示空数据。地图功能需配置 `NEXT_PUBLIC_AMAP_KEY`。
+博客前台的 `NEXT_PUBLIC_API_BASE_URL` 必须包含 `/api/blog`，默认是 `http://localhost:1002/api/blog`，连接本仓库的 `seiko-blog-service`。未启动博客后端时，部分页面降级显示空数据。地图功能需配置 `NEXT_PUBLIC_AMAP_KEY`。
 
 版本管理中不包含原 `.env.local`、依赖目录和构建缓存。更多页面与配置说明见 [博客前台 README](seiko-blog-ui/README.md)。
 
@@ -96,19 +111,37 @@ Copy-Item .env.example .env.local
 npm run dev
 ```
 
-访问 http://localhost:3002。生产环境使用 `npm run build` 构建、`npm start` 启动（端口 3002）。
+访问 http://localhost:3003。生产环境使用 `npm run build` 构建、`npm start` 启动（端口 3003）。
 
-管理前台的 `NEXT_PUBLIC_API_BASE_URL` 默认是 `http://localhost:1001/api`，请求路径会追加 `/manage/**`。当前 `seiko-work-service` 不提供这些管理接口，登录和内容管理仍需原博客后端，并在该后端允许管理前台来源的跨域请求。两个后端同时运行时需分配不同端口并调整 API 地址。足迹地图选点需配置 `NEXT_PUBLIC_AMAP_KEY` 和 `NEXT_PUBLIC_AMAP_SECURITY_CODE`。
+管理前台的 `NEXT_PUBLIC_API_BASE_URL` 默认是 `http://localhost:1003/api`，请求路径会追加 `/manage/**`，连接本仓库的 `seiko-manage-service`。已有 `.env.local` 中的旧地址需同步修改并重启前台。足迹地图选点需配置 `NEXT_PUBLIC_AMAP_KEY` 和 `NEXT_PUBLIC_AMAP_SECURITY_CODE`。
 
 原 `.env.local` 未迁入；依赖和构建缓存不纳入版本管理。更多说明见 [管理前台 README](seiko-manage-ui/README.md)。
+
+### 7. 启动博客与管理后端（可选）
+
+原 seiko-blog 已拆分为 seiko-blog-service（公开 API，端口 1002）和 seiko-manage-service（管理 API，端口 1003），均依赖 seiko-common 中的共享模型。工作台仍使用端口 1001。
+
+两个博客相关服务共用 seiko_blog 数据库和 Redis 库 10，使后台内容修改能失效公开端缓存；工作台使用独立数据库和 Redis 库。已有博客数据库可以直接复用，初始化及共享上传目录说明见 [博客服务说明](seiko-blog-service/README.md)。sql/seiko_blog.sql 含数据和删表语句，不要对已有数据库直接导入。
+
+在仓库根目录执行：
+
+```powershell
+# 设置 MYSQL_PASSWORD；Redis 需要密码时设置 REDIS_PASSWORD
+# 两服务的 BLOG_UPLOAD_PATH 应设置为相同的绝对目录
+mvn -pl seiko-blog-service,seiko-manage-service -am clean install
+# 分别在两个终端启动
+mvn -pl seiko-blog-service spring-boot:run "-Dspring-boot.run.profiles=dev"
+mvn -pl seiko-manage-service spring-boot:run "-Dspring-boot.run.profiles=dev"
+```
+
+开发文档：[博客 Swagger UI](http://localhost:1002/swagger-ui.html)、[管理 Swagger UI](http://localhost:1003/swagger-ui.html)。可执行包分别是 seiko-blog-service/target/seiko-blog-service-1.0.0.jar 和 seiko-manage-service/target/seiko-manage-service-1.0.0.jar。完整配置与测试命令见 [博客服务说明](seiko-blog-service/README.md) 和 [管理服务说明](seiko-manage-service/README.md)。
 
 ## 常用命令
 
 ```bash
-# 后端
-mvn test                                    # 运行测试
-mvn test -Dtest=CryptoUtilTest              # 运行单个测试
-mvn clean package -DskipTests               # 打包 -> target/seiko-work-service.jar
+# 工作台后端（从仓库根目录运行）
+mvn -pl seiko-work-service -am test
+mvn -pl seiko-work-service -am clean package  # 打包到 seiko-work-service/target/seiko-work-service.jar
 
 # 前端
 npm run dev / build / lint
@@ -116,7 +149,7 @@ npm run dev / build / lint
 
 ## API 概览
 
-统一返回格式 `{ "code": 200, "message": "...", "data": {...} }`，`code == 200` 表示成功。认证方式为请求头携带 `token: <uuid>`（登录接口返回）。
+Work、Blog 和 Manage 的 API 统一返回 HTTP 200，响应格式为 `{ "code": 200, "message": "...", "data": {...} }`。调用方通过 `code` 判断结果。业务码 `200` 表示成功，`400` 表示参数错误，`401` 表示未登录，`403` 表示权限不足，`429` 表示请求过于频繁，`1008` 表示验证码发送过于频繁。认证方式为请求头携带 `token: <uuid>`（登录接口返回）。
 
 | 模块 | 路径 | 说明 |
 |------|------|------|
@@ -144,7 +177,7 @@ npm run dev / build / lint
 - 绑定新邮箱、手机号分别使用 `POST /auth/email/bind-code`、`POST /auth/phone/bind-code`，请求体仍为 `{email}` 或 `{phone}`，并携带登录 Token。验证码同时绑定当前用户。
 - 验证码不跨用途使用，连续输错 5 次即失效；校验成功立即消费，即使后续数据库操作失败也不恢复，需重新获取。旧版本验证码不再生效。
 - 发送前原子预占接收方冷却与 IP 小时配额；发送失败释放本次冷却，但保留 IP 次数，防止利用失败供应商反复调用。延迟过久的发送不会覆盖新预占。
-- 修改或重置密码在事务提交后撤销既有会话，用户需重新登录。错误响应保留 Result 格式，同时返回对应 HTTP 状态。
+- 修改或重置密码在事务提交后撤销既有会话，用户需重新登录。
 - IMAP 仅允许 `MailProviderEnum` 中列出的服务商地址、993 端口和 SSL；保存时和每次连接前都会检查，历史自定义配置也受限制。新增企业邮箱需先由维护者审查并加入服务商列表。
 - 模拟短信仅用于 dev，会在日志中打印开发验证码；正式环境需提供真实 `SmsService` Bean，否则发送明确失败。
 
@@ -152,11 +185,11 @@ npm run dev / build / lint
 
 已有数据库不能直接更换 CRYPTO_KEY，否则原授权码无法解密。若旧环境使用默认密钥或较短密钥，应先备份数据库并停止所有应用实例，然后使用离线工具迁移。工具不打印授权码和密钥，默认只验证并回滚；任意一条密文不匹配旧密钥都会导致整批回滚。
 
-通过安全方式设置环境变量 `OLD_CRYPTO_KEY`（旧环境实际密钥）、`CRYPTO_KEY`（新的至少 32 字符随机密钥）、`ROTATION_JDBC_URL`、`MYSQL_USERNAME`、`MYSQL_PASSWORD`。在后端目录运行，驱动路径替换为本机 Maven 缓存中的 mysql-connector-j JAR：
+通过安全方式设置环境变量 `OLD_CRYPTO_KEY`（旧环境实际密钥）、`CRYPTO_KEY`（新的至少 32 字符随机密钥）、`ROTATION_JDBC_URL`、`MYSQL_USERNAME`、`MYSQL_PASSWORD`。在后端目录运行，驱动路径替换为本机 Maven 缓存中 Work 后端实际使用的 mysql-connector-j JAR（当前为 `9.1.0`）：
 
 ```text
-java --class-path "<mysql-connector-j-8.0.33.jar 的完整路径>" tools/RotateMailKey.java
-java --class-path "<mysql-connector-j-8.0.33.jar 的完整路径>" tools/RotateMailKey.java --apply
+java --class-path "<mysql-connector-j JAR 的完整路径>" tools/RotateMailKey.java
+java --class-path "<mysql-connector-j JAR 的完整路径>" tools/RotateMailKey.java --apply
 ```
 
 确认迁移成功后，所有应用实例使用同一个新 CRYPTO_KEY 启动，再清理临时的 OLD_CRYPTO_KEY。工具仅处理现有 AES-GCM 密文，早期明文授权码应走单独的数据修复流程。本次代码修复不会自动修改实际数据库。
@@ -264,4 +297,4 @@ java tools/RotateMailKey.java --self-test
 
 在 `seiko-work-ui` 中运行 `npm test`、`npx tsc --noEmit` 和 `npm run build`。请求测试覆盖独立取消、过期响应、用户隔离、写后失效与失败重试；日历测试对照旧算法验证随机数据、跨月、泳道和溢出数量。
 
-浏览器隔离预览可先运行 `npm start -- --hostname 127.0.0.1 --port 3002`，再运行 `node tests/preview-fixtures.cjs`，访问 `http://127.0.0.1:3003`。该预览仅使用虚构数据，不连接真实后端或保存业务数据。
+浏览器隔离预览可先运行 `npm start -- --hostname 127.0.0.1`（工作台端口 3002），再运行 `node tests/preview-fixtures.cjs`，访问 `http://127.0.0.1:3103`。该预览仅使用虚构数据，不连接真实后端或保存业务数据。

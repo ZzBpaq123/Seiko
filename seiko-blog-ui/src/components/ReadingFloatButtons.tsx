@@ -4,45 +4,53 @@ import { useState, useEffect } from "react";
 import { ArrowUp, ArrowLeft, Check } from "lucide-react";
 import { useRouter } from "next/navigation";
 
-export default function ReadingFloatButtons() {
+export default function ReadingFloatButtons({ articleId }: { articleId: string }) {
   const [visible, setVisible] = useState(false);
   const [progress, setProgress] = useState(0);
-  const [isComplete, setIsComplete] = useState(false);
+  const isComplete = progress === 100;
   const router = useRouter();
 
   useEffect(() => {
-    const updateProgress = () => {
-      const scrollTop = window.scrollY || document.documentElement.scrollTop;
-      const scrollHeight = document.documentElement.scrollHeight;
-      const clientHeight = window.innerHeight;
+    const article = document.getElementById(articleId);
+    if (!article) return;
 
-      if (scrollHeight <= clientHeight) {
-        // 页面不可滚动，视为已读完
-        setProgress(100);
-        setIsComplete(true);
-        setVisible(true);
-        return;
+    const updateProgress = () => {
+      const { bottom, height } = article.getBoundingClientRect();
+      const remaining = bottom - window.innerHeight;
+      const scrollRange = height - window.innerHeight;
+      let nextProgress = 0;
+      if (remaining <= 1) {
+        nextProgress = 100;
+      } else if (scrollRange > 0) {
+        nextProgress = Math.max(0, Math.floor((1 - remaining / scrollRange) * 100));
       }
 
-      const rawProgress = (scrollTop / (scrollHeight - clientHeight)) * 100;
-      const clampedProgress = Math.min(100, Math.max(0, rawProgress));
-      setProgress(Math.round(clampedProgress));
-      setIsComplete(clampedProgress >= 99); // 接近底部即视为完成
-      setVisible(scrollTop > 200);
+      setProgress(nextProgress);
+      setVisible(window.scrollY > 200 || nextProgress === 100);
     };
 
-    // 延迟一帧初始化，避免在 effect 同步路径中 setState
-    const rafId = requestAnimationFrame(updateProgress);
-
-    window.addEventListener("scroll", updateProgress, { passive: true });
-    window.addEventListener("resize", updateProgress, { passive: true });
+    let frameId = 0;
+    const scheduleUpdate = () => {
+      if (frameId) return;
+      frameId = requestAnimationFrame(() => {
+        frameId = 0;
+        updateProgress();
+      });
+    };
+    const observer = new ResizeObserver(scheduleUpdate);
+    observer.observe(article);
+    if (article.parentElement) observer.observe(article.parentElement);
+    scheduleUpdate();
+    window.addEventListener("scroll", scheduleUpdate, { passive: true });
+    window.addEventListener("resize", scheduleUpdate);
 
     return () => {
-      cancelAnimationFrame(rafId);
-      window.removeEventListener("scroll", updateProgress);
-      window.removeEventListener("resize", updateProgress);
+      cancelAnimationFrame(frameId);
+      observer.disconnect();
+      window.removeEventListener("scroll", scheduleUpdate);
+      window.removeEventListener("resize", scheduleUpdate);
     };
-  }, []);
+  }, [articleId]);
 
   const scrollToTop = () => {
     window.scrollTo({ top: 0, behavior: "smooth" });

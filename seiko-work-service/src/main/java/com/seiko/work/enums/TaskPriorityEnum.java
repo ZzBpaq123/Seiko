@@ -2,7 +2,7 @@ package com.seiko.work.enums;
 
 import com.baomidou.mybatisplus.annotation.EnumValue;
 import com.fasterxml.jackson.annotation.JsonValue;
-import com.seiko.work.base.BaseEnum;
+import com.seiko.common.enums.BaseEnum;
 import lombok.Getter;
 
 /**

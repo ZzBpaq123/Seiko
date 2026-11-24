@@ -7,15 +7,15 @@ const CAROUSEL_KEYFRAMES =
 
 export default function HeroPanel() {
   return (
-    <section className="relative flex h-full w-screen shrink-0 flex-col bg-[#f8f7f5]">
+    <section className="relative flex min-h-full w-full flex-col">
       <div className="relative z-10 flex flex-1 items-center justify-center px-4 sm:px-6 lg:px-8">
-        <div className="flex flex-col items-center justify-between w-full max-w-5xl gap-10 mx-auto md:flex-row">
+        <div className="flex flex-col items-center justify-between w-full max-w-5xl gap-5 py-4 sm:gap-10 mx-auto md:flex-row">
           {/* 左侧文本 */}
           <div className="text-center md:text-left">
-            <h1 className="mb-6 font-semibold text-stone-900 text-[clamp(2.5rem,6vw,4rem)]">
+            <h1 className="mb-3 font-semibold sm:mb-6 text-stone-900 text-[clamp(1.75rem,6vw,4rem)]">
               👋 Hello, 我叫Seiko
             </h1>
-            <p className="mb-4 text-stone-700 text-[clamp(1.25rem,2.5vw,1.75rem)]">
+            <p className="mb-2 text-stone-700 sm:mb-4 text-[clamp(1rem,2.5vw,1.75rem)]">
               我是一名 00 年的{" "}
               <span className="relative inline-block h-[1.75em] overflow-hidden rounded-md align-bottom bg-blue-500 px-3 leading-[1.75em] text-white">
                 <span className="block animate-carousel-scroll text-justify [text-align-last:justify]">
@@ -26,7 +26,7 @@ export default function HeroPanel() {
                 </span>
               </span>
             </p>
-            <p className="mb-8 text-lg text-stone-500">
+            <p className="mb-4 text-base sm:mb-8 sm:text-lg text-stone-500">
               这个博客站，记录一些技术文章，分享一些知识，记录一些生活。
             </p>
             <div className="flex justify-center gap-4 md:justify-start">
@@ -49,7 +49,7 @@ export default function HeroPanel() {
 
           {/* 右侧头像 */}
           <div className="relative shrink-0">
-            <div className="h-60 w-60 overflow-hidden rounded-full bg-white shadow-[0_0_60px_rgba(59,130,246,0.25)] sm:h-80 sm:w-[320px]">
+            <div className="h-40 w-40 overflow-hidden rounded-full bg-white shadow-[0_0_60px_rgba(59,130,246,0.25)] sm:h-80 sm:w-[320px]">
               <Image
                 src="/avatar.jpg"
                 alt="Seiko的头像"

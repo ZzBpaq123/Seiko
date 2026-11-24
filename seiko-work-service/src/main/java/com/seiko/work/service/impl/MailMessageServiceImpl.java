@@ -1,10 +1,10 @@
 package com.seiko.work.service.impl;
 
-import com.seiko.work.base.ResultCode;
+import com.seiko.common.result.ResultCode;
 import com.seiko.work.config.MailServerPolicy;
 import com.seiko.work.entity.Mail;
 import com.seiko.work.vo.MailMessageVO;
-import com.seiko.work.exception.BusinessException;
+import com.seiko.common.exception.BusinessException;
 import com.seiko.work.service.MailMessageService;
 import com.seiko.work.service.MailService;
 import jakarta.mail.Address;

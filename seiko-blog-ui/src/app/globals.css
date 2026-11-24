@@ -3,6 +3,9 @@
 :root {
   --background: #ffffff;
   --foreground: #171717;
+  --font-geist-sans: system-ui, "Segoe UI", "Microsoft YaHei", sans-serif;
+  --font-geist-mono: ui-monospace, Consolas, monospace;
+  --font-zcool-kuaile: "Microsoft YaHei", "PingFang SC", system-ui, sans-serif;
 }
 
 @theme inline {

@@ -30,7 +30,7 @@ export default function GalleryContent({
   const [albums] = useState<AlbumVO[]>(initialAlbums);
   const [selectedAlbum, setSelectedAlbum] = useState<AlbumVO | null>(null);
   const [photos, setPhotos] = useState<PhotoVO[]>([]);
-  const [loadingPhotos, setLoadingPhotos] = useState(false);
+  const [photoError, setPhotoError] = useState(false);
 
   /* ─── 生成星星位置（带最小间距） ─── */
   const clickableStars = useMemo<StarPosition[]>(() => {
@@ -88,6 +88,7 @@ export default function GalleryContent({
   const handleBack = useCallback(() => {
     setSelectedAlbum(null);
     setPhotos([]);
+    setPhotoError(false);
     setPhase("starry");
   }, []);
 
@@ -95,18 +96,15 @@ export default function GalleryContent({
   const handleEnter = useCallback(async () => {
     if (!selectedAlbum) return;
     setPhase("transition");
-    setLoadingPhotos(true);
+    setPhotoError(false);
 
-    try {
-      const data = await getPhotosByAlbumId(selectedAlbum.id);
-      setPhotos(data);
-    } catch {
-      setPhotos([]);
-    } finally {
-      setLoadingPhotos(false);
-    }
-
-    setTimeout(() => setPhase("photos"), 1500);
+    const [result] = await Promise.allSettled([
+      getPhotosByAlbumId(selectedAlbum.id),
+      new Promise<void>((resolve) => setTimeout(resolve, 1500)),
+    ]);
+    setPhotos(result.status === "fulfilled" ? result.value : []);
+    setPhotoError(result.status === "rejected");
+    setPhase("photos");
   }, [selectedAlbum]);
 
   const showStarryContent =
@@ -271,6 +269,12 @@ export default function GalleryContent({
         </div>
       )}
 
+      {phase === "transition" && (
+        <p role="status" className="pointer-events-none absolute inset-0 z-10 grid place-items-center text-sm text-white/80">
+          正在加载照片…
+        </p>
+      )}
+
       {/* 照片列表 */}
       {showPhotos && (
         <div className="absolute inset-0 z-10 overflow-y-auto animate-content-fade-in">
@@ -300,13 +304,15 @@ export default function GalleryContent({
               <h2 className="text-3xl font-light text-white text-center mb-3 tracking-[0.2em]">
                 {selectedAlbum?.albumName}
               </h2>
-              <p className="text-white/40 text-center mb-12 text-sm tracking-wider">
-                {photos.length} 张照片
-              </p>
-
-              {loadingPhotos ? (
-                <div className="flex items-center justify-center py-20">
-                  <div className="w-8 h-8 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+              {!photoError && (
+                <p className="mb-12 text-center text-sm tracking-wider text-white/40">{photos.length} 张照片</p>
+              )}
+              {photoError ? (
+                <div className="py-20 text-center text-white/80">
+                  <p role="alert">照片加载失败，请重试。</p>
+                  <button type="button" onClick={handleEnter} className="mt-4 rounded-full border border-white/40 px-5 py-2">
+                    重新加载照片
+                  </button>
                 </div>
               ) : photos.length > 0 ? (
                 <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 md:gap-4">

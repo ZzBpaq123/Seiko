@@ -5,7 +5,7 @@ import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.seiko.work.dto.MailDTO;
 import com.seiko.work.entity.Mail;
 import com.seiko.work.enums.MailProviderEnum;
-import com.seiko.work.exception.BusinessException;
+import com.seiko.common.exception.BusinessException;
 import com.seiko.work.mapper.MailMapper;
 import com.seiko.work.service.MailService;
 import com.seiko.work.vo.MailAccountVO;

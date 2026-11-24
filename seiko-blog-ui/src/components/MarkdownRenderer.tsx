@@ -132,23 +132,16 @@ export default function MarkdownRenderer({
             />
           ),
           li: (props) => <li {...props} className="my-1" />,
-          code: ({ className, children, ...props }) => {
-            const isInline = !className;
-            return isInline ? (
-              <code
-                {...props}
-                className="rounded bg-zinc-100 px-1.5 py-0.5 text-sm text-zinc-800 dark:bg-zinc-800 dark:text-zinc-200"
-              >
-                {children}
-              </code>
-            ) : (
-              <pre className="my-4 overflow-x-auto rounded-lg bg-zinc-900 p-4">
-                <code {...props} className="text-sm text-zinc-100">
-                  {children}
-                </code>
-              </pre>
-            );
-          },
+          pre: ({ children }) => (
+            <pre className="my-4 overflow-x-auto rounded-lg bg-zinc-900 p-4 text-sm text-zinc-100 [&>code]:bg-transparent [&>code]:p-0 [&>code]:text-inherit">
+              {children}
+            </pre>
+          ),
+          code: ({ className, children }) => (
+            <code className={["rounded bg-zinc-100 px-1.5 py-0.5 text-sm text-zinc-800 dark:bg-zinc-800 dark:text-zinc-200", className].filter(Boolean).join(" ")}>
+              {children}
+            </code>
+          ),
           a: (props) => (
             <a
               {...props}

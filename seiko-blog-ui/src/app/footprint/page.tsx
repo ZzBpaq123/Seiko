@@ -10,7 +10,7 @@ export const metadata: Metadata = {
 export const revalidate = 3600;
 
 export default async function FootprintPage() {
-  const footprints = await getFootprintList().catch(() => []);
+  const footprints = await getFootprintList().catch(() => null);
 
   return <FootprintClient footprints={footprints} />;
 }

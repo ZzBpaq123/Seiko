@@ -86,7 +86,7 @@ export default function ActivityPanel() {
   const months = useMemo(() => generateMonths(today), [today]);
 
   return (
-    <section className="flex h-full w-screen shrink-0 flex-col items-center justify-center px-4 sm:px-6 lg:px-8">
+    <section className="flex min-h-full w-full flex-col items-center justify-center px-4 sm:px-6 lg:px-8">
       <div className="w-full max-w-7xl mx-auto">
         <h2 className="mb-4 text-center font-bold text-stone-900 text-3xl sm:text-4xl">
           活跃度

@@ -3,7 +3,7 @@ package com.seiko.work.entity;
 import com.baomidou.mybatisplus.annotation.TableField;
 import com.baomidou.mybatisplus.annotation.TableName;
 import com.fasterxml.jackson.annotation.JsonFormat;
-import com.seiko.work.base.BaseEntity;
+import com.seiko.common.base.BaseEntity;
 import com.seiko.work.enums.TaskPriorityEnum;
 import com.seiko.work.enums.TaskStatusEnum;
 import io.swagger.v3.oas.annotations.media.Schema;

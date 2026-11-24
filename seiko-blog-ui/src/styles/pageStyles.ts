@@ -68,65 +68,39 @@ export const pageHeaderStyles: Record<
   },
 };
 
-// Footer 页面背景色配置
-export const pageFooterStyles: Record<
-  string,
-  { bg: string; border: string; text: string }
-> = {
-  // 首页
-  "/": {
-    bg: "bg-zinc-50 dark:bg-zinc-950",
-    border: "border-zinc-200 dark:border-zinc-800",
-    text: "text-zinc-500 dark:text-zinc-400",
-  },
-  // 文章列表页 - 与首页相同
-  "/blog": {
-    bg: "bg-zinc-50 dark:bg-zinc-950",
-    border: "border-zinc-200 dark:border-zinc-800",
-    text: "text-zinc-500 dark:text-zinc-400",
-  },
-  // 相册页 - 与首页相同
-  "/gallery": {
-    bg: "bg-zinc-50 dark:bg-zinc-950",
-    border: "border-zinc-200 dark:border-zinc-800",
-    text: "text-zinc-500 dark:text-zinc-400",
-  },
-  // 足迹页 - 与首页相同
+type PageFooterStyle = {
+  background: string;
+  text: string;
+};
+
+export const defaultFooterStyle: PageFooterStyle = {
+  background: "[--page-background:white] dark:[--page-background:var(--color-zinc-950)]",
+  text: "text-zinc-500 dark:text-zinc-400",
+};
+
+export const pageFooterStyles: Partial<Record<string, PageFooterStyle>> = {
   "/footprint": {
-    bg: "bg-zinc-50 dark:bg-zinc-950",
-    border: "border-zinc-200 dark:border-zinc-800",
-    text: "text-zinc-500 dark:text-zinc-400",
-  },
-  // 探索页
-  "/explore": {
-    bg: "bg-indigo-50 dark:bg-black",
-    border: "border-indigo-200 dark:border-indigo-900",
-    text: "text-indigo-600 dark:text-indigo-400",
+    background: "[--page-background:var(--color-zinc-50)] dark:[--page-background:black]",
+    text: defaultFooterStyle.text,
   },
   "/explore/book": {
-    bg: "bg-amber-50 dark:bg-black",
-    border: "border-amber-200 dark:border-amber-900",
+    background: "[--page-background:var(--color-amber-50)] dark:[--page-background:var(--color-amber-950)]",
     text: "text-amber-600 dark:text-amber-400",
   },
   "/explore/movie": {
-    bg: "bg-[#f5f3ef]",
-    border: "border-stone-200",
+    background: "[--page-background:var(--color-movie-bg)]",
     text: "text-stone-500",
   },
   "/explore/game": {
-    bg: "bg-[#f8f7f5]",
-    border: "border-stone-200",
+    background: "[--page-background:var(--color-game-bg)]",
     text: "text-stone-500",
   },
   "/explore/resource": {
-    bg: "bg-[#f8f7f5]",
-    border: "border-stone-200",
+    background: "[--page-background:#f8f7f5]",
     text: "text-stone-500",
   },
-  // 关于我页
   "/about/myself": {
-    bg: "bg-[#f8f7f5]",
-    border: "border-stone-200",
+    background: "[--page-background:#f8f7f5]",
     text: "text-stone-500",
   },
 };
@@ -137,13 +111,6 @@ export const defaultHeaderStyle = {
   scrolledBg:
     "bg-white/60 backdrop-blur-md shadow-[0_0_30px_rgba(255,255,255,0.35),0_0_60px_rgba(255,255,255,0.15),inset_0_1px_0_rgba(255,255,255,0.2)] dark:bg-zinc-950/60 dark:shadow-[0_0_30px_rgba(0,0,0,0.5),0_0_60px_rgba(0,0,0,0.3),inset_0_1px_0_rgba(255,255,255,0.05)]",
   text: "text-zinc-900 dark:text-zinc-100",
-};
-
-// 默认 Footer 样式
-export const defaultFooterStyle = {
-  bg: "bg-white dark:bg-zinc-950",
-  border: "border-zinc-200 dark:border-zinc-800",
-  text: "text-zinc-500 dark:text-zinc-400",
 };
 
 // 获取页面样式，支持前缀匹配

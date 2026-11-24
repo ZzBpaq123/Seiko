@@ -85,7 +85,7 @@ const SUCCESS_CODE = 200;
 // ═══════════════════════════════════════════════════════════════
 
 const API_BASE_URL =
-  process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:1001/api/blog";
+  process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:1002/api/blog";
 
 const axiosInstance: AxiosInstance = axios.create({
   baseURL: API_BASE_URL,

@@ -7,7 +7,7 @@ import Toast from "@/components/Toast";
 
 export const metadata: Metadata = {
   title: "Seiko 管理后台",
-  description: "Seiko Blog 后台管理系统",
+  description: "Seiko 后台管理系统",
 };
 
 export default function RootLayout({

@@ -1,7 +1,7 @@
 package com.seiko.work.config;
 
-import com.seiko.work.base.ResultCode;
-import com.seiko.work.exception.BusinessException;
+import com.seiko.common.result.ResultCode;
+import com.seiko.common.exception.BusinessException;
 import com.seiko.work.service.SmsService;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.context.annotation.Bean;

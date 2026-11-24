@@ -5,7 +5,7 @@ import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.seiko.work.constant.RedisKey;
-import com.seiko.work.exception.BusinessException;
+import com.seiko.common.exception.BusinessException;
 import com.seiko.work.service.HolidayService;
 import com.seiko.work.vo.HolidayVO;
 import lombok.extern.slf4j.Slf4j;

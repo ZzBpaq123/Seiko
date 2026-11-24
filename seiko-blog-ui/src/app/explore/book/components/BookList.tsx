@@ -12,7 +12,7 @@ export default function BookList({ books, currentIndex }: BookListProps) {
   return (
     <div className="relative h-full w-full overflow-hidden">
       <div
-        className="flex h-full flex-col transition-transform duration-[600ms] ease-[cubic-bezier(0.4,0,0.2,1)]"
+        className="flex h-full flex-col transition-transform duration-[600ms] ease-[cubic-bezier(0.4,0,0.2,1)] motion-reduce:transition-none"
         style={{
           transform: `translateY(-${currentIndex * 50}%)`,
         }}
@@ -25,6 +25,7 @@ export default function BookList({ books, currentIndex }: BookListProps) {
           return (
             <div
               key={`${book.id}-${index}`}
+              inert={!isActive}
               className="h-1/2 w-full shrink-0"
               style={{ transitionDelay: `${Math.abs(index - currentIndex) * 40}ms` }}
             >

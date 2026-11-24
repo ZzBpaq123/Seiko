@@ -902,7 +902,7 @@ export default function LoginPage() {
         </div>
 
         <div className="relative z-20 text-sm text-gray-500">
-          © {new Date().getFullYear()} Seiko Blog · 管理后台
+          © {new Date().getFullYear()} Seiko · 管理后台
         </div>
 
         {/* 装饰光斑 */}

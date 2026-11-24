@@ -3,9 +3,9 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "dev": "next dev",
+    "dev": "next dev -p 3001",
     "build": "next build",
-    "start": "next start",
+    "start": "next start -p 3001",
     "lint": "eslint"
   },
   "dependencies": {
@@ -14,14 +14,18 @@
     "axios": "^1.16.1",
     "clsx": "^2.1.1",
     "lucide-react": "^1.7.0",
+    "mdast-util-to-string": "^4.0.0",
     "next": "16.1.6",
     "react": "19.2.3",
     "react-dom": "19.2.3",
     "react-markdown": "^10.1.0",
     "remark-gfm": "^4.0.1",
+    "remark-parse": "^11.0.0",
     "simple-icons": "^16.12.0",
     "tailwind-merge": "^3.6.0",
-    "three": "^0.176.0"
+    "three": "^0.176.0",
+    "unified": "^11.0.5",
+    "unist-util-visit": "^5.1.0"
   },
   "devDependencies": {
     "@tailwindcss/postcss": "^4",
